@@ -25,7 +25,7 @@ static const uint16_t C_BG = rgb(0x0b, 0x3a, 0x5c), C_BGS = rgb(0x05, 0x1c, 0x2e
   C_EYE = rgb(0x0a, 0x14, 0x22), C_WHITE = rgb(0xff, 0xff, 0xff), C_OK = rgb(0x5b, 0xe3, 0x7d), C_LOW = rgb(0xff, 0x5a, 0x5f),
   C_TXT = rgb(0xe8, 0xed, 0xf5), C_DIM = rgb(0x8f, 0xb4, 0xd0), C_SEL = rgb(0xff, 0xcf, 0x4a), C_CHEEK = rgb(0xff, 0x8f, 0xa3),
   C_BUBBLE = rgb(0x9f, 0xd8, 0xf5), C_PLA = rgb(0xd6, 0xec, 0xf2), C_CAP = rgb(0xff, 0x5a, 0x5f), C_BAG = rgb(0xee, 0xf1, 0xf4),
-  C_FOOD = rgb(0xff, 0x9f, 0x43), C_PLAY = rgb(0xb8, 0xa4, 0xff), C_WIENER = rgb(0xe0, 0x74, 0x52), C_COOKIE = rgb(0xdd, 0xb2, 0x6a);
+  C_FOOD = rgb(0xff, 0x9f, 0x43), C_PLAY = rgb(0xb8, 0xa4, 0xff), C_WIENER = rgb(0xe0, 0x74, 0x52), C_COOKIE = rgb(0xdd, 0xb2, 0x6a), C_SADDLE = rgb(0x9a, 0xa4, 0xb4);
 
 struct Tama {
   float hunger, fun, energy, health;
@@ -245,20 +245,19 @@ static void iconNo(int id, int x, int y, int s) {   // rot durchstreichen
   for (int i = 0; i < w; i++) R(x + i * s, y + (i * hh / w) * s, s + 1, s + 1, C_LOW);
 }
 static const int W = 135, H = 240, WTOP = 23;
-static const int DCX = 68, DCY = 98;                  // Mitte des Tiers
-static const int TAGX = 23, TAGY = 150, TAGW = 88;    // Namensschild
-static const int INFX = 67, INFY = 186;               // Mitte fuer Alter bzw. Meldung
-static const int DOTX = 120, DOTY = 183;              // roter Warnpunkt
+static const int DCX = 68, DCY = 112;                 // Mitte des Tiers
+static const int INFX = 67, INFY = 186;               // Mitte fuer Meldungen
+static const int CORNX = 132, NAMEY = 202, AGEY = 190; // Name und Alter klein rechts unten
 static const int MENUY = 214;
 static const int FOODX = 112, FOODY = 30;             // Futter kommt von oben rechts
-static const int PL[5][2] = { { 4, 30 }, { 118, 32 }, { 6, 128 }, { 120, 130 }, { 108, 198 } };
-static const int ST[4][2] = { { 20, 40 }, { 60, 34 }, { 100, 136 }, { 30, 200 } };
+static const int PL[5][2] = { { 4, 30 }, { 118, 32 }, { 6, 140 }, { 120, 146 }, { 8, 196 } };
+static const int ST[4][2] = { { 20, 40 }, { 60, 40 }, { 100, 152 }, { 30, 176 } };
 static const int CIR[8][2] = { { 0, -10 }, { 7, -7 }, { 10, 0 }, { 7, 7 }, { 0, 10 }, { -7, 7 }, { -10, 0 }, { -7, -7 } };
 // Gesichter der Tiere: Auge, Mund (Start, Laenge), Wange, Nase (Futterziel), Kopf oben (Ball), Atemblasen
 struct Spec { int ex, ey, mx, my, ml, chx, chy, nx, ny, bx, by, hx, hy; };
 static const Spec SPC[3] = {
   { 10, -6, 22, 2, 10, 12, 0, 34, 2, 24, -2, 6, -24 },      // Delfin
-  { 10, -6, 22, 2, 10, 12, 0, 34, 2, 24, -2, 6, -24 },      // Orca
+  { 12, -7, 16, 4, 10, 21, -1, 29, 3, 10, -14, 2, -16 },    // Orca
   { 28, -6, 30, 0, 5, 23, -3, 37, -2, 24, -8, 36, -6 } };   // Schildkroete
 static void drawPlastic(int i, int x, int y) {
   if (i % 2 == 0) { R(x + 1, y, 4, 2, C_CAP); R(x, y + 2, 6, 11, C_PLA); R(x, y + 6, 6, 2, C_CAP); }
@@ -280,20 +279,25 @@ static void drawPet(int sp, int cx, int cy, int mo, bool sk, bool dead, int32_t 
     SR(-36, 2, 56, 4, dead ? C_DEADFIN : C_TBELLY);
     SR(-22, -16, 10, 6, dk); SR(-6, -18, 12, 6, dk); SR(10, -14, 8, 6, dk); SR(-30, -6, 10, 6, dk); SR(-14, -6, 12, 6, dk); SR(4, -6, 10, 6, dk);
     eb = skin;
-  } else {         // Delfin oder Orca
-    bool orca = sp == 1;
-    uint16_t body = dead ? C_DEAD : (sk ? (orca ? C_ORCASICK : C_SICK) : (orca ? C_ORCA : C_BODY));
-    uint16_t fin = dead ? C_DEADFIN : (sk ? (orca ? C_ORCASICK : C_SICKFIN) : (orca ? C_ORCA : C_FIN));
-    uint16_t belly = orca ? C_ORCAB : C_BELLY;
+  } else if (sp == 1) {   // Orca: schwarz-weiss, runder Kopf, hohe Rueckenflosse
+    uint16_t blk = dead ? C_DEADFIN : (sk ? C_ORCASICK : C_ORCA), wht = C_ORCAB;
+    SR(-40, -4, 14, 8, blk); SR(-46, -6, 6, 12, blk); SR(-52, -12, 8, 8, blk); SR(-52, 4, 8, 8, blk);
+    SR(-10, -18, 10, 4, blk); SR(-9, -22, 8, 4, blk); SR(-8, -26, 6, 4, blk); SR(-7, -30, 5, 4, blk); SR(-6, -34, 4, 4, blk); SR(-5, -38, 2, 4, blk);
+    SR(-30, -14, 48, 4, blk); SR(-34, -10, 56, 4, blk); SR(-36, -6, 64, 12, blk); SR(-34, 6, 58, 4, blk); SR(-26, 10, 44, 4, blk);
+    SR(-22, -14, 12, 2, C_SADDLE);                                              // grauer Sattel
+    SR(-28, 6, 52, 4, wht); SR(-20, 10, 36, 4, wht); SR(14, 4, 12, 2, wht); SR(-24, 0, 12, 6, wht);   // Bauch, Kinn, Flanke
+    SR(7, -11, 11, 2, wht); SR(5, -9, 15, 7, wht);                              // Augenfleck
+    SR(-2, 8, 10, 5, blk); SR(0, 13, 9, 4, blk);                                // Brustflosse
+    eb = wht;
+  } else {         // Delfin
+    uint16_t body = dead ? C_DEAD : (sk ? C_SICK : C_BODY), fin = dead ? C_DEADFIN : (sk ? C_SICKFIN : C_FIN);
     SR(-44, -3, 14, 6, body); SR(-48, -4, 4, 8, fin); SR(-54, -12, 6, 8, fin); SR(-54, 4, 6, 8, fin);
-    if (orca) { SR(-6, -22, 10, 4, fin); SR(-8, -28, 7, 6, fin); SR(-9, -34, 5, 6, fin); SR(-9, -38, 3, 4, fin); }
-    else { SR(-6, -22, 10, 4, fin); SR(-10, -26, 7, 4, fin); SR(-13, -30, 4, 4, fin); }
+    SR(-6, -22, 10, 4, fin); SR(-10, -26, 7, 4, fin); SR(-13, -30, 4, 4, fin);
     SR(-12, -18, 24, 4, body); SR(-22, -14, 40, 4, body); SR(-30, -10, 50, 4, body); SR(-34, -6, 58, 12, body);
     SR(-30, 6, 50, 4, body); SR(-22, 10, 34, 4, body); SR(24, -2, 9, 7, body);
-    SR(-28, 6, 46, 4, belly); SR(-20, 10, 30, 2, belly); SR(22, 3, 11, 2, belly);
+    SR(-28, 6, 46, 4, C_BELLY); SR(-20, 10, 30, 2, C_BELLY); SR(22, 3, 11, 2, C_BELLY);
     SR(-6, 8, 8, 4, fin); SR(-8, 12, 6, 4, fin);
     eb = body;
-    if (orca) { SR(6, -9, 10, 6, belly); eb = belly; mc = C_MOUTHL; }   // weisser Augenfleck
   }
   int ex = P.ex, ey = P.ey, mx = P.mx, my = P.my, ml = P.ml;
   bool blink = (t % 3200) < 140;
@@ -359,7 +363,7 @@ static void drawGame(int32_t t) {
     R(sx + 4, WTOP, 1, ly - WTOP + 3, C_TXT); R(sx + 1, ly + 3, 4, 1, C_TXT); R(sx + 1, ly + 1, 1, 2, C_TXT);
     drawPlastic(i, sx, ap < 500 ? sy : ly + 4);   // liegt noch, bis der Haken es greift
   } else if (an == A_WAVES) {     // Wellen ziehen durchs Wasser
-    for (int r = 0; r < 2; r++) for (int k = 0; k < 16; k++) R((k * 16 + ap / 20) % 256 - 16, 40 + r * 90 + ((k + r) % 2) * 2, 8, 2, C_BUBBLE);
+    for (int r = 0; r < 2; r++) for (int k = 0; k < 16; k++) R((k * 16 + ap / 20) % 256 - 16, 40 + r * 110 + ((k + r) % 2) * 2, 8, 2, C_BUBBLE);
   } else if (an == A_BUBBLES) {   // Blubberblasen steigen auf
     for (int i = 0; i < 6; i++) { int y = 140 - (ap / 6 + i * 23) % 100, x = 6 + i * 7 + ((ap / 100 + i) % 2) * 2; R(x, y, 5, 5, C_BUBBLE); R(x + 1, y + 1, 3, 3, bg); }
   }
@@ -402,50 +406,56 @@ static void drawGame(int32_t t) {
   } else if (an == A_STARTLE) {   // Ausrufezeichen
     int x = cx + sc(P.nx + 2), y = cy + sc(-20); R(x, y, 3, 10, C_LOW); R(x, y + 12, 3, 3, C_LOW);
   }
-  // Name und Alter
-  const char* name = NAMES[S.species];
-  R(TAGX + 1, TAGY, TAGW - 2, 20, C_SEL); R(TAGX, TAGY + 1, TAGW, 18, C_SEL);
-  T(name, TAGX + (TAGW - tw(name, 2)) / 2, TAGY + 3, 2, C_BG);
+  // Meldung (Icon) in der Mitte unter dem Tier
   if (an == A_NONE && t < S.msgUntil && S.msgIcon >= 0) {
     int id = S.msgIcon, x = INFX - icW(id), y = INFY - icH(id);
     icon(id, x, y, 2, C_TXT);
     if (S.msgNo) iconNo(id, x, y, 2);
-  } else if (!S.dead && an == A_NONE) {
-    char buf[12]; snprintf(buf, sizeof(buf), "%u", (unsigned)(S.age / 60));
-    int cw = kW(I_CLOCK, 3, 2), x = INFX - (cw + 3 + tw(buf, 2)) / 2;
-    iconK(I_CLOCK, x, INFY - kH(I_CLOCK, 3, 2) / 2, 3, 2, C_DIM); T(buf, x + cw + 3, INFY - 7, 2, C_DIM);
   }
-  if (needs() && !S.sleeping && (t % 1000) < 500) R(DOTX, DOTY, 7, 7, C_LOW);   // roter Warnpunkt
+  // Name und Alter klein rechts unten, links daneben der rote Warnpunkt
+  const char* name = NAMES[S.species];
+  int nw = tw(name, 1) + 5;
+  R(CORNX - nw + 1, NAMEY, nw - 2, 10, C_SEL); R(CORNX - nw, NAMEY + 1, nw, 8, C_SEL);
+  T(name, CORNX - nw + 3, NAMEY + 1, 1, C_BG);
+  int ax = CORNX;
+  if (!S.dead) {
+    char buf[12]; snprintf(buf, sizeof(buf), "%u", (unsigned)(S.age / 60));
+    ax = CORNX - tw(buf, 1) - 9;
+    icon(I_CLOCK, ax, AGEY, 1, C_DIM); T(buf, ax + 9, AGEY, 1, C_DIM);
+  }
+  if (needs() && !S.sleeping && (t % 1000) < 500) R(ax - 8, AGEY + 1, 5, 5, C_LOW);
   drawMenu(an, sk);
 }
 
 static void drawBars(int x, int y, int n, uint16_t on, uint16_t off) {   // 3 Balken, n davon an
   for (int i = 0; i < 3; i++) R(x + i * 7, y + 12 - i * 4, 5, 4 + i * 4, i < n ? on : off);
 }
-static void backRow(int y, bool sel) {
-  R(3, y, 129, 26, sel ? C_SEL : C_PANEL);
-  iconK(I_BACK, INFX - kW(I_BACK, 3, 2) / 2, y + (26 - kH(I_BACK, 3, 2)) / 2, 3, 2, sel ? C_BG : C_TXT);
+static void backRow(int y, bool sel, int h = 26) {
+  R(3, y, 129, h, sel ? C_SEL : C_PANEL);
+  iconK(I_BACK, INFX - kW(I_BACK, 3, 2) / 2, y + (h - kH(I_BACK, 3, 2)) / 2, 3, 2, sel ? C_BG : C_TXT);
 }
 static void drawSettings(int32_t t) {
   R(0, 0, W, H, C_BGS);
   const int ids[8] = { I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_BACK };
   for (int r = 0; r < SET_N; r++) {
-    int y = 6 + r * 29; bool sel = S.uiSel == r;
+    int y = 4 + r * 27; bool sel = S.uiSel == r;
     uint16_t fg = sel ? C_BG : C_TXT;
-    if (r == 7) { backRow(y, sel); continue; }
-    R(3, y, 129, 26, sel ? C_SEL : C_PANEL);
-    iconK(ids[r], 8 + (20 - kW(ids[r], 3, 2)) / 2, y + (26 - kH(ids[r], 3, 2)) / 2, 3, 2, fg);
-    if (r == 0) { gkn = 1; gkd = 4; drawPet(S.species, 104, y + 15, M_HAPPY, false, false, t, A_NONE, 0, false); }
-    else if (r == 1) { const char* v = S.speed == 0 ? "1x" : (S.speed == 1 ? "10x" : "50x"); T(v, 128 - tw(v, 2), y + 5, 2, fg); }
-    else if (r == 2 || r == 3) { int n = r == 2 ? S.vol : S.sens; if (n == 0) iconK(I_CROSSX, 110, y + 8, 3, 2, sel ? C_BG : C_LOW); else drawBars(105, y + 6, n, fg, sel ? C_FIN : C_DIM); }
+    if (r == 7) { backRow(y, sel, 24); continue; }
+    R(3, y, 129, 24, sel ? C_SEL : C_PANEL);
+    iconK(ids[r], 8 + (20 - kW(ids[r], 3, 2)) / 2, y + (24 - kH(ids[r], 3, 2)) / 2, 3, 2, fg);
+    if (r == 0) { gkn = 1; gkd = 4; drawPet(S.species, 104, y + 14, M_HAPPY, false, false, t, A_NONE, 0, false); }
+    else if (r == 1) { const char* v = S.speed == 0 ? "1x" : (S.speed == 1 ? "10x" : "50x"); T(v, 128 - tw(v, 2), y + 4, 2, fg); }
+    else if (r == 2 || r == 3) { int n = r == 2 ? S.vol : S.sens; if (n == 0) iconK(I_CROSSX, 110, y + 7, 3, 2, sel ? C_BG : C_LOW); else drawBars(105, y + 5, n, fg, sel ? C_FIN : C_DIM); }
     else if (r == 4) {
       char b[16]; if (S.batt < 0) strcpy(b, "--"); else snprintf(b, sizeof(b), "%d%%", S.batt);
-      int x = 128 - tw(b, 2); T(b, x, y + 5, 2, fg);
-      if (S.chg) iconK(I_BOLT, x - 13, y + 7, 3, 2, sel ? C_BG : C_SEL);
+      int x = 128 - tw(b, 2); T(b, x, y + 4, 2, fg);
+      if (S.chg) iconK(I_BOLT, x - 13, y + 6, 3, 2, sel ? C_BG : C_SEL);
     }
-    else if (r == 5) iconK(S.wifiOk ? I_CHECK : I_CROSSX, 112, y + 8, 3, 2, sel ? C_BG : (S.wifiOk ? C_OK : C_LOW));
-    else if (r == 6) { char b[12]; snprintf(b, sizeof(b), "v%d", FW_VERSION); T(b, 128 - tw(b, 2), y + 5, 2, fg); }
+    else if (r == 5) iconK(S.wifiOk ? I_CHECK : I_CROSSX, 112, y + 7, 3, 2, sel ? C_BG : (S.wifiOk ? C_OK : C_LOW));
+    else if (r == 6) { char b[12]; snprintf(b, sizeof(b), "v%d", FW_VERSION); T(b, 128 - tw(b, 2), y + 4, 2, fg); }
   }
+  const char* cr = "(c) 2026 Daniel Lassak";
+  T(cr, (W - tw(cr, 1)) / 2 + 1, 228, 1, C_DIM);
 }
 static void drawPicker(int32_t t) {   // Tier fuer das neue Spiel waehlen
   R(0, 0, W, H, C_BGS);
@@ -540,6 +550,10 @@ static int16_t micBuf[256];
 static WebServer web(80);
 static DNSServer dns;
 static bool apOn = false;
+static uint32_t apSince = 0, apSaved = 0;
+static bool screenOn = true;
+static const uint32_t DIM_MS = 10000, OFF_MS = 60000;      // Display: nach 10 s dunkler, nach 1 min aus
+static const uint32_t AP_MAX_MS = 300000;                  // Einrichtungs-WLAN spaetestens nach 5 min zu
 
 // Uhrzeit als Sekunden seit 1970 (Ortszeit, ohne Zeitzonen-Umrechnung)
 static uint32_t daysFromCivil(int y, unsigned m, unsigned d) {
@@ -564,7 +578,7 @@ static uint32_t buildTime() {   // Zeitpunkt, an dem der Sketch kompiliert wurde
   int m = (int)(strstr(mons, mon) - mons) / 3 + 1;
   return daysFromCivil(y, m, d) * 86400u + hh * 3600u + mi * 60u + ss;
 }
-static void micStart() { M5.Speaker.end(); M5.Mic.begin(); micOn = true; loudCnt = 0; loudPeak = 0; }
+static void micStart() { M5.Speaker.end(); if (S.sens == 0 || apOn) { micOn = false; return; } M5.Mic.begin(); micOn = true; loudCnt = 0; loudPeak = 0; }   // Sensoren aus: Mikro bleibt aus
 static void micStop() { if (micOn) { M5.Mic.end(); micOn = false; } }
 static void drawNow() { drawScene((int32_t)millis()); cv.pushSprite(0, 0); }
 static bool wifiSaved() { prefs.begin("wifi", true); bool ok = prefs.getString("s", "").length() > 0; prefs.end(); return ok; }
@@ -583,11 +597,11 @@ static void apStart() {
   web.on("/", HTTP_GET, [] { web.send(200, "text/html", PAGE); });
   web.on("/save", HTTP_POST, [] {
     prefs.begin("wifi", false); prefs.putString("s", web.arg("s")); prefs.putString("p", web.arg("p")); prefs.end();
-    S.wifiOk = true; S.netState = 3;
+    S.wifiOk = true; S.netState = 3; apSaved = millis();
     web.send(200, "text/html", "<meta charset=utf-8><meta name=viewport content='width=device-width'><h2>Gespeichert!</h2><p>Du kannst das WLAN am iPhone jetzt wieder wechseln.</p>");
   });
   web.onNotFound([] { web.sendHeader("Location", "http://192.168.4.1/"); web.send(302, "text/plain", ""); });
-  web.begin(); apOn = true;
+  web.begin(); apOn = true; apSince = millis(); apSaved = 0;
 }
 static void apStop() { if (!apOn) return; web.stop(); dns.stop(); WiFi.softAPdisconnect(true); WiFi.mode(WIFI_OFF); apOn = false; }
 
@@ -623,6 +637,7 @@ void setup() {
   auto cfg = M5.config();
   M5.begin(cfg);
   Serial.begin(115200);
+  WiFi.persistent(false); WiFi.mode(WIFI_OFF);   // Funk aus, bis er gebraucht wird
   esp_ota_mark_app_valid_cancel_rollback();      // diese Version laeuft: behalten
   M5.Display.setRotation(DREHUNG);
   cv.setColorDepth(16);
@@ -647,14 +662,21 @@ void loop() {
   M5.update();
   uint32_t now = millis(); int32_t t = (int32_t)now;
   // Tasten: A (vorne) = ausfuehren, B (Seite) kurz = weiter, B lang = Einstellungen
+  bool a = M5.BtnA.wasPressed(), bl = M5.BtnB.wasHold(), bn = !bl && M5.BtnB.wasClicked();
+  if ((a || bl || bn) && !screenOn) { a = bl = bn = false; lastAct = now; }   // Display war aus: erster Druck weckt nur
   bool any = false;
-  if (M5.BtnA.wasPressed()) { pressOk(t); any = true; saveState(); }
-  if (M5.BtnB.wasHold()) { pressLong(); any = true; }
-  else if (M5.BtnB.wasClicked()) { pressNext(); any = true; }
+  if (a) { pressOk(t); any = true; saveState(); }
+  if (bl) { pressLong(); any = true; }
+  else if (bn) { pressNext(); any = true; }
   if (any) { lastAct = now; if (!S.snd) sfx(t, S_CLICK); }
   // Auftraege aus den Einstellungen
   if (S.req == 1) { S.req = 0; micStop(); apStart(); }
-  if (apOn) { dns.processNextRequest(); web.handleClient(); if (S.ui != 3) { apStop(); micStart(); } }
+  if (apOn) {
+    dns.processNextRequest(); web.handleClient();
+    uint32_t m = millis();   // frisch messen: apSince/apSaved koennen juenger sein als 'now'
+    if ((apSaved && m - apSaved > 5000) || m - apSince > AP_MAX_MS) S.ui = 1;   // gespeichert oder zu lange offen: zu
+    if (S.ui != 3) { apStop(); micStart(); }
+  }
   if (S.req == 2) { S.req = 0; doUpdate(); lastTick = millis(); }
   // Zeit (mit Zeitraffer): jede Sekunde ein Spielschritt, die Uhr laeuft mit
   uint32_t tickMs = TICK_MS[S.speed];
@@ -665,6 +687,7 @@ void loop() {
   if (now - lastBatt >= 5000 || lastBatt == 0) { lastBatt = now; S.batt = M5.Power.getBatteryLevel(); S.chg = (int)M5.Power.isCharging() == 1; }
   // Bewegung: 50x pro Sekunde messen, jede Sekunde auswerten
   bool sensing = S.ui == 0 && S.sens > 0;
+  if (S.sens == 0 && micOn) micStop(); else if (S.sens > 0 && !micOn && playId < 0 && !apOn) micStart();
   if (now - lastImu >= 20) {
     lastImu = now; float ax, ay, az;
     if (M5.Imu.getAccel(&ax, &ay, &az)) { shSum += fabsf(sqrtf(ax * ax + ay * ay + az * az) - 1.0f); shN++; }
@@ -703,12 +726,20 @@ void loop() {
     if (m[i] < 0) { playId = -1; micStart(); lastMic = now + 100; }
     else if (i != playIdx) { playIdx = i; if (m[i] > 0) M5.Speaker.tone(m[i], m[i + 1]); }
   }
-  // Anzeige
-  if (S.anim != lastAnimSeen && S.animStart > (int32_t)lastAct) lastAct = now;
+  // Anzeige und Energiesparen: nach 10 s dunkler, nach 1 min aus (WLAN-Einrichtung und Update ausgenommen)
+  if (S.anim != lastAnimSeen && S.animStart > (int32_t)lastAct) lastAct = now;   // Sensor-Ereignisse wecken auch
   lastAnimSeen = S.anim;
-  if (now - lastDraw >= 40) { drawScene(t); cv.pushSprite(0, 0); lastDraw = now; }
+  bool keepOn = S.ui >= 3;
+  uint32_t idle = now - lastAct;
+  if (!keepOn && idle > OFF_MS) {
+    if (screenOn) { M5.Display.setBrightness(0); M5.Display.sleep(); screenOn = false; curBright = 0; setCpuFrequencyMhz(80); }
+  } else {
+    if (!screenOn) { setCpuFrequencyMhz(240); M5.Display.wakeup(); screenOn = true; curBright = -1; lastDraw = 0; }
+    bool moving = S.anim && (int32_t)(now - S.animStart) < 1200;
+    if (now - lastDraw >= (moving ? 40u : 100u)) { drawScene(t); cv.pushSprite(0, 0); lastDraw = now; }
+    int target = (!keepOn && idle > DIM_MS) ? (S.sleeping ? 5 : 25) : 120;
+    if (target != curBright) { M5.Display.setBrightness(target); curBright = target; }
+  }
   if (now - lastSave >= 30000) { saveState(); lastSave = now; }
-  int target = (S.ui == 0 && now - lastAct > 20000) ? (S.sleeping ? 5 : 25) : 120;
-  if (target != curBright) { M5.Display.setBrightness(target); curBright = target; }
 }
 #endif
