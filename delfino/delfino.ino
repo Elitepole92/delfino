@@ -26,9 +26,9 @@ static const uint16_t C_BG = rgb(0x0b, 0x3a, 0x5c), C_BGS = rgb(0x05, 0x1c, 0x2e
   C_TXT = rgb(0xe8, 0xed, 0xf5), C_DIM = rgb(0x8f, 0xb4, 0xd0), C_SEL = rgb(0xff, 0xcf, 0x4a), C_CHEEK = rgb(0xff, 0x8f, 0xa3),
   C_BUBBLE = rgb(0x9f, 0xd8, 0xf5), C_PLA = rgb(0xd6, 0xec, 0xf2), C_CAP = rgb(0xff, 0x5a, 0x5f), C_BAG = rgb(0xee, 0xf1, 0xf4),
   C_FOOD = rgb(0xff, 0x9f, 0x43), C_PLAY = rgb(0xb8, 0xa4, 0xff), C_WIENER = rgb(0xe0, 0x74, 0x52), C_COOKIE = rgb(0xdd, 0xb2, 0x6a), C_SADDLE = rgb(0x9a, 0xa4, 0xb4),
-  C_BALLBG = rgb(0x04, 0x06, 0x0c), C_BALLWIN = rgb(0x1a, 0x2f, 0x8a), C_HELMD = rgb(0xe0, 0xa8, 0x20), C_HAIR = rgb(0x3a, 0x1f, 0x2e),
+  C_BALLBG = rgb(0x1c, 0x12, 0x30), C_BALLWIN = rgb(0x1a, 0x2f, 0x8a), C_HELM = rgb(0x22, 0x24, 0x2a), C_HELMB = rgb(0x48, 0x4c, 0x58), C_HELMS = rgb(0x7a, 0x80, 0x90), C_HAIR = rgb(0x3a, 0x1f, 0x2e),
   C_SKINF = rgb(0xe8, 0xb8, 0x8c), C_SHADOW = rgb(0x9b, 0x5f, 0xd0), C_LIPS = rgb(0xd0, 0x2a, 0x4a), C_GOLD = rgb(0xf2, 0xc1, 0x4e),
-  C_BLOUSE = rgb(0x7b, 0x3f, 0xa0), C_VEST = rgb(0xff, 0x7a, 0x1a), C_REFL = rgb(0xd8, 0xe0, 0xe8), C_CLOTH = rgb(0x5a, 0x14, 0x2a),
+  C_BLOUSE = rgb(0x7b, 0x3f, 0xa0), C_VEST = rgb(0xff, 0x7a, 0x1a), C_VESTY = rgb(0xe6, 0xf2, 0x2a), C_REFL = rgb(0xd8, 0xe0, 0xe8), C_CLOTH = rgb(0x5a, 0x14, 0x2a),
   C_ORB = rgb(0x9f, 0xa8, 0xff), C_ORB2 = rgb(0xd8, 0xc8, 0xff);
 
 struct Tama {
@@ -199,22 +199,22 @@ static const char* const ANSWERS[18] = {
   "Frag den|Rigger.",
   "Nur wenn|das Gaffa|reicht.",
   "Ja, aber|nur mit|Nebel.",
-  "Steck's|nochmal|aus und an.",
+  "Steck's|nochmal aus|und an.",
   "Die Antwort|liegt im|Case 17.",
   "Signal ist|da. Ton|nicht.",
   "Frag nach|dem Abbau|nochmal.",
   "Phantom-|speisung|vergessen.",
-  "Das ist ein|Problem der|Location.",
+  "Das ist ein|Problem|der|Location.",
   "Sieht gut|aus. Vom|FOH aus.",
   "Ja, aber|der Kunde|will rot.",
-  "Ich schau mal|im Catering.",
-  "Zeit fuer ne|Produktions-|besprechung.",
+  "Ich schau|mal im|Catering.",
+  "Zeit fuer|ne Produk-|tionsbe-|sprechung.",
   "Tausch mal|das Kabel.",
-  "Do it. Fast.",
+  "Do it.|Fast.",
   "Frag die|Helfer.",
 };
 static void gBall(int32_t t) {   // schuetteln oder A: neue Antwort
-  if (S.ui != 5 || (S.ballAns >= 0 && t < S.ballAt + 1500)) return;   // kurze Pause zwischen zwei Fragen
+  if (S.ui != 5 || (S.ballAns >= 0 && t < S.ballAt + 4000)) return;   // Pause zwischen zwei Fragen
   int a = rnd() % 18; if (a == S.ballAns) a = (a + 1) % 18;
   S.ballAns = a; S.ballAt = t; sfx(t, A_DIZZY);
 }
@@ -467,7 +467,8 @@ static void drawSettings(int32_t t) {
     uint16_t fg = sel ? C_BG : C_TXT;
     if (r == 7) { backRow(y, sel, 24); continue; }
     R(3, y, 129, 24, sel ? C_SEL : C_PANEL);
-    iconK(ids[r], 8 + (20 - kW(ids[r], 3, 2)) / 2, y + (24 - kH(ids[r], 3, 2)) / 2, 3, 2, fg);
+    if (r == 0) T("Neu", 8, y + 5, 2, fg);   // neues Spiel
+    else iconK(ids[r], 8 + (20 - kW(ids[r], 3, 2)) / 2, y + (24 - kH(ids[r], 3, 2)) / 2, 3, 2, fg);
     if (r == 0) { gkn = 1; gkd = 4; drawPet(S.species, 104, y + 14, M_HAPPY, false, false, t, A_NONE, 0, false); }
     else if (r == 1) { const char* v = S.speed == 0 ? "1x" : (S.speed == 1 ? "10x" : "50x"); T(v, 128 - tw(v, 2), y + 4, 2, fg); }
     else if (r == 2 || r == 3) { int n = r == 2 ? S.vol : S.sens; if (n == 0) iconK(I_CROSSX, 110, y + 7, 3, 2, sel ? C_BG : C_LOW); else drawBars(105, y + 5, n, fg, sel ? C_FIN : C_DIM); }
@@ -519,39 +520,39 @@ static void drawUpdate(int32_t t) {
 }
 static int isq(int n) { int x = 0; while ((x + 1) * (x + 1) <= n) x++; return x; }
 static void disc(int cx, int cy, int r, uint16_t c) { for (int dy = -r; dy <= r; dy++) { int w = isq(r * r - dy * dy); R(cx - w, cy + dy, 2 * w + 1, 1, c); } }
-static void drawBall(int32_t t) {   // Esmeraldas VT Beratung
+static void drawBall(int32_t t) {   // Esmeraldas VT Orakel
   R(0, 0, W, H, C_BALLBG);
-  const char* title = "Esmeraldas VT Beratung"; T(title, (W - tw(title, 1)) / 2, 6, 1, C_SEL);
-  int ap = t - S.ballAt; bool think = S.ballAns >= 0 && ap >= 0 && ap < 900;
+  const char* title = "Esmeraldas VT Orakel"; T(title, (W - tw(title, 1)) / 2, 4, 1, C_SEL);
+  int ap = t - S.ballAt; bool think = S.ballAns >= 0 && ap >= 0 && ap < 2500;
   // Sprechblase
-  R(7, 20, 121, 62, C_TXT); R(5, 22, 125, 58, C_TXT); R(62, 82, 12, 3, C_TXT); R(64, 85, 8, 2, C_TXT); R(66, 87, 4, 2, C_TXT);
-  if (think) { int n = (ap / 200) % 3 + 1; for (int i = 0; i < n; i++) R(52 + i * 12, 48, 6, 6, C_BG); }
-  else if (S.ballAns < 0) T("?", 58, 41, 3, C_BG);
+  R(4, 14, 127, 86, C_TXT); R(2, 16, 131, 82, C_TXT); R(62, 100, 12, 3, C_TXT); R(64, 103, 8, 2, C_TXT); R(66, 105, 4, 2, C_TXT);
+  if (think) { int n = (ap / 250) % 3 + 1; for (int i = 0; i < n; i++) R(52 + i * 12, 54, 6, 6, C_BG); }
+  else if (S.ballAns < 0) T("?", 58, 47, 3, C_BG);
   else {
     const char* a = ANSWERS[S.ballAns]; int n = 1; for (const char* q = a; *q; q++) if (*q == '|') n++;
-    int y = 51 - n * 5 + 1; const char* s = a;
+    int y = 57 - n * 9 + 1; const char* s = a;
     for (int i = 0; i < n; i++) {
       char line[24]; int k = 0; while (*s && *s != '|' && k < 23) line[k++] = *s++; line[k] = 0; if (*s == '|') s++;
-      T(line, 67 - tw(line, 1) / 2, y + i * 10, 1, C_BG);
+      T(line, 67 - tw(line, 2) / 2, y + i * 18, 2, C_BG);
     }
   }
   int x = 67;
-  R(x - 18, 92, 36, 4, C_SEL); R(x - 22, 96, 44, 8, C_SEL); R(x - 27, 104, 54, 4, C_HELMD); R(x - 2, 92, 4, 12, C_HELMD);   // Schutzhelm
-  R(x - 24, 108, 8, 28, C_HAIR); R(x + 16, 108, 8, 28, C_HAIR);   // Locken
-  R(x - 16, 108, 32, 26, C_SKINF); R(x - 12, 134, 24, 4, C_SKINF);   // Gesicht
-  R(x - 11, 114, 7, 2, C_SHADOW); R(x + 4, 114, 7, 2, C_SHADOW);   // Lidschatten
-  if ((t % 3000) < 120) { R(x - 10, 118, 5, 1, C_EYE); R(x + 5, 118, 5, 1, C_EYE); } else { R(x - 10, 116, 5, 3, C_EYE); R(x + 5, 116, 5, 3, C_EYE); }   // Augen, blinzeln
-  R(x - 5, 127, 10, 2, C_LIPS);   // Lippenstift
-  R(x - 23, 132, 3, 6, C_GOLD); R(x + 20, 132, 3, 6, C_GOLD);   // Ohrringe
-  R(x - 5, 138, 10, 4, C_SKINF); R(x - 30, 142, 60, 44, C_BLOUSE);   // Hals, Bluse
-  R(x - 30, 142, 22, 44, C_VEST); R(x + 8, 142, 22, 44, C_VEST);   // Warnweste
-  R(x - 30, 162, 22, 3, C_REFL); R(x + 8, 162, 22, 3, C_REFL); R(x - 30, 172, 22, 3, C_REFL); R(x + 8, 172, 22, 3, C_REFL);   // Reflexstreifen
-  R(x + 28, 138, 8, 14, C_VEST); R(x + 24, 128, 10, 8, C_SKINF);   // Arm und Hand
-  R(x + 24, 112, 9, 18, C_EYE); R(x + 26, 116, 5, 4, C_OK); R(x + 30, 100, 2, 12, C_EYE);   // Funkgeraet
-  if (think) for (int k = 1; k <= (ap / 150) % 3 + 1; k++) R(x + 34 + k * 4, 104 - k * 2, 2, 4 + k * 4, C_SEL);   // Funkwellen
-  R(0, 196, W, 44, C_CLOTH); R(0, 196, W, 2, C_GOLD);                                       // Tisch
-  disc(x, 186, 16, think ? (((ap / 100) % 2) ? C_BALLWIN : C_ORB2) : C_ORB); R(x - 7, 177, 4, 4, C_WHITE);   // Kristallkugel
-  R(x - 12, 200, 24, 5, C_GOLD);                                                            // Sockel
+  R(x - 18, 108, 36, 4, C_HELM); R(x - 22, 112, 44, 8, C_HELM); R(x - 27, 120, 54, 4, C_HELMB); R(x - 2, 108, 4, 12, C_HELMB); R(x - 14, 111, 8, 2, C_HELMS);   // schwarzer Schutzhelm mit Glanz
+  R(x - 24, 124, 8, 28, C_HAIR); R(x + 16, 124, 8, 28, C_HAIR);   // Locken
+  R(x - 16, 124, 32, 26, C_SKINF); R(x - 12, 150, 24, 4, C_SKINF);   // Gesicht
+  R(x - 11, 130, 7, 2, C_SHADOW); R(x + 4, 130, 7, 2, C_SHADOW);   // Lidschatten
+  if ((t % 3000) < 120) { R(x - 10, 134, 5, 1, C_EYE); R(x + 5, 134, 5, 1, C_EYE); } else { R(x - 10, 132, 5, 3, C_EYE); R(x + 5, 132, 5, 3, C_EYE); }   // Augen, blinzeln
+  R(x - 5, 143, 10, 2, C_LIPS);   // Lippenstift
+  R(x - 23, 148, 3, 6, C_GOLD); R(x + 20, 148, 3, 6, C_GOLD);   // Ohrringe
+  R(x - 5, 154, 10, 4, C_SKINF); R(x - 30, 158, 60, 44, C_BLOUSE);   // Hals, Bluse
+  R(x - 30, 158, 22, 44, C_VESTY); R(x + 8, 158, 22, 44, C_VESTY);   // gelbe Warnweste
+  R(x - 30, 178, 22, 3, C_REFL); R(x + 8, 178, 22, 3, C_REFL); R(x - 30, 188, 22, 3, C_REFL); R(x + 8, 188, 22, 3, C_REFL);   // Reflexstreifen
+  R(0, 212, W, 28, C_CLOTH); R(0, 212, W, 2, C_GOLD);   // Tisch
+  R(x - 12, 213, 24, 5, C_GOLD); R(x - 30, 210, 10, 5, C_SKINF); R(x + 20, 210, 10, 5, C_SKINF);   // Sockel, Haende
+  R(8, 216, 10, 20, C_EYE); R(14, 206, 2, 10, C_EYE); R(10, 220, 6, 4, C_OK); R(10, 227, 6, 1, C_HELMB); R(10, 230, 6, 1, C_HELMB);   // Funkgeraet auf dem Tisch
+  R(96, 226, 26, 7, C_REFL); R(100, 228, 18, 1, C_HELMB); R(100, 231, 18, 1, C_HELMB); R(122, 228, 3, 3, C_HELMB); R(124, 224, 7, 3, C_REFL); R(124, 232, 7, 3, C_REFL);   // Leatherman
+  disc(x, 200, 15, think ? (((ap / 100) % 2) ? C_BALLWIN : C_ORB2) : C_ORB); R(x - 7, 192, 4, 4, C_WHITE);   // Kristallkugel
+  if (think) for (int k = 1; k <= (ap / 150) % 3 + 1; k++) R(18 + k * 4, 204 - k * 2, 2, 4 + k * 4, C_SEL);   // Funkwellen
 }
 static void drawScene(int32_t t) {
   if (S.ui == 1) drawSettings(t);
