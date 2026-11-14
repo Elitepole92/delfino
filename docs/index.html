@@ -97,7 +97,7 @@ const C = {
   BALLBG: rgb(0x1c, 0x12, 0x30), BALLWIN: rgb(0x1a, 0x2f, 0x8a), HELM: rgb(0x22, 0x24, 0x2a), HELMB: rgb(0x48, 0x4c, 0x58), HELMS: rgb(0x7a, 0x80, 0x90), HAIR: rgb(0x3a, 0x1f, 0x2e),
   SKINF: rgb(0xe8, 0xb8, 0x8c), SHADOW: rgb(0x9b, 0x5f, 0xd0), LIPS: rgb(0xd0, 0x2a, 0x4a), GOLD: rgb(0xf2, 0xc1, 0x4e),
   BLOUSE: rgb(0x7b, 0x3f, 0xa0), VEST: rgb(0xff, 0x7a, 0x1a), VESTY: rgb(0xe6, 0xf2, 0x2a), REFL: rgb(0xd8, 0xe0, 0xe8), CLOTH: rgb(0x5a, 0x14, 0x2a),
-  ORB: rgb(0x9f, 0xa8, 0xff), ORB2: rgb(0xd8, 0xc8, 0xff)
+  ORB: rgb(0x9f, 0xa8, 0xff), ORB2: rgb(0xd8, 0xc8, 0xff), GLOVE: rgb(0x8a, 0x8f, 0x9c), GLOVE2: rgb(0x5c, 0x61, 0x6e)
 };
 const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
   NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21 };
@@ -531,6 +531,11 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   }
   const isq = (n) => { let x = 0; while ((x + 1) * (x + 1) <= n) x++; return x; };
   const disc = (cx, cy, r, c) => { for (let dy = -r; dy <= r; dy++) { const w = isq(r * r - dy * dy); R(cx - w, cy + dy, 2 * w + 1, 1, c); } };
+  const glove = (gx, gy, c, acc) => {
+    R(gx, gy - 8, 3, 8, c); R(gx + 4, gy - 10, 3, 10, c); R(gx + 8, gy - 9, 3, 9, c); R(gx + 12, gy - 7, 3, 7, c);
+    R(gx, gy, 15, 12, c); R(gx - 5, gy + 3, 5, 3, c); R(gx - 4, gy + 1, 3, 3, c);
+    R(gx, gy + 4, 15, 2, acc); R(gx + 1, gy + 12, 13, 4, acc);
+  };
   function drawBall(S, t) {
     R(0, 0, W, H, C.BALLBG);
     const title = 'Esmeraldas VT Orakel'; T(title, dv(W - tw(title, 1), 2), 4, 1, C.SEL);
@@ -556,7 +561,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     R(0, 212, W, 28, C.CLOTH); R(0, 212, W, 2, C.GOLD);
     R(x - 12, 213, 24, 5, C.GOLD); R(x - 30, 210, 10, 5, C.SKINF); R(x + 20, 210, 10, 5, C.SKINF);
     R(8, 216, 10, 20, C.EYE); R(14, 206, 2, 10, C.EYE); R(10, 220, 6, 4, C.OK); R(10, 227, 6, 1, C.HELMB); R(10, 230, 6, 1, C.HELMB);
-    R(96, 226, 26, 7, C.REFL); R(100, 228, 18, 1, C.HELMB); R(100, 231, 18, 1, C.HELMB); R(122, 228, 3, 3, C.HELMB); R(124, 224, 7, 3, C.REFL); R(124, 232, 7, 3, C.REFL);
+    glove(103, 220, C.GLOVE2, C.SEL); glove(115, 222, C.GLOVE, C.VEST);
     disc(x, 200, 15, think ? ((dv(ap, 100) % 2) ? C.BALLWIN : C.ORB2) : C.ORB); R(x - 7, 192, 4, 4, C.WHITE);
     if (think) for (let k = 1; k <= dv(ap, 150) % 3 + 1; k++) R(18 + k * 4, 204 - k * 2, 2, 4 + k * 4, C.SEL);
   }

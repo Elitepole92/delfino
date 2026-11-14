@@ -29,7 +29,7 @@ static const uint16_t C_BG = rgb(0x0b, 0x3a, 0x5c), C_BGS = rgb(0x05, 0x1c, 0x2e
   C_BALLBG = rgb(0x1c, 0x12, 0x30), C_BALLWIN = rgb(0x1a, 0x2f, 0x8a), C_HELM = rgb(0x22, 0x24, 0x2a), C_HELMB = rgb(0x48, 0x4c, 0x58), C_HELMS = rgb(0x7a, 0x80, 0x90), C_HAIR = rgb(0x3a, 0x1f, 0x2e),
   C_SKINF = rgb(0xe8, 0xb8, 0x8c), C_SHADOW = rgb(0x9b, 0x5f, 0xd0), C_LIPS = rgb(0xd0, 0x2a, 0x4a), C_GOLD = rgb(0xf2, 0xc1, 0x4e),
   C_BLOUSE = rgb(0x7b, 0x3f, 0xa0), C_VEST = rgb(0xff, 0x7a, 0x1a), C_VESTY = rgb(0xe6, 0xf2, 0x2a), C_REFL = rgb(0xd8, 0xe0, 0xe8), C_CLOTH = rgb(0x5a, 0x14, 0x2a),
-  C_ORB = rgb(0x9f, 0xa8, 0xff), C_ORB2 = rgb(0xd8, 0xc8, 0xff);
+  C_ORB = rgb(0x9f, 0xa8, 0xff), C_ORB2 = rgb(0xd8, 0xc8, 0xff), C_GLOVE = rgb(0x8a, 0x8f, 0x9c), C_GLOVE2 = rgb(0x5c, 0x61, 0x6e);
 
 struct Tama {
   float hunger, fun, energy, health;
@@ -527,6 +527,11 @@ static void drawUpdate(int32_t t) {
 }
 static int isq(int n) { int x = 0; while ((x + 1) * (x + 1) <= n) x++; return x; }
 static void disc(int cx, int cy, int r, uint16_t c) { for (int dy = -r; dy <= r; dy++) { int w = isq(r * r - dy * dy); R(cx - w, cy + dy, 2 * w + 1, 1, c); } }
+static void glove(int gx, int gy, uint16_t c, uint16_t acc) {   // Handschuh, Finger nach oben (gx/gy: Handflaeche links oben)
+  R(gx, gy - 8, 3, 8, c); R(gx + 4, gy - 10, 3, 10, c); R(gx + 8, gy - 9, 3, 9, c); R(gx + 12, gy - 7, 3, 7, c);   // Finger
+  R(gx, gy, 15, 12, c); R(gx - 5, gy + 3, 5, 3, c); R(gx - 4, gy + 1, 3, 3, c);                                    // Handflaeche, Daumen
+  R(gx, gy + 4, 15, 2, acc); R(gx + 1, gy + 12, 13, 4, acc);                                                       // Knoechelpolster, Klettbund
+}
 static void drawBall(int32_t t) {   // Esmeraldas VT Orakel
   R(0, 0, W, H, C_BALLBG);
   const char* title = "Esmeraldas VT Orakel"; T(title, (W - tw(title, 1)) / 2, 4, 1, C_SEL);
@@ -557,7 +562,7 @@ static void drawBall(int32_t t) {   // Esmeraldas VT Orakel
   R(0, 212, W, 28, C_CLOTH); R(0, 212, W, 2, C_GOLD);   // Tisch
   R(x - 12, 213, 24, 5, C_GOLD); R(x - 30, 210, 10, 5, C_SKINF); R(x + 20, 210, 10, 5, C_SKINF);   // Sockel, Haende
   R(8, 216, 10, 20, C_EYE); R(14, 206, 2, 10, C_EYE); R(10, 220, 6, 4, C_OK); R(10, 227, 6, 1, C_HELMB); R(10, 230, 6, 1, C_HELMB);   // Funkgeraet auf dem Tisch
-  R(96, 226, 26, 7, C_REFL); R(100, 228, 18, 1, C_HELMB); R(100, 231, 18, 1, C_HELMB); R(122, 228, 3, 3, C_HELMB); R(124, 224, 7, 3, C_REFL); R(124, 232, 7, 3, C_REFL);   // Leatherman
+  glove(103, 220, C_GLOVE2, C_SEL); glove(115, 222, C_GLOVE, C_VEST);   // Rigging-Handschuhe
   disc(x, 200, 15, think ? (((ap / 100) % 2) ? C_BALLWIN : C_ORB2) : C_ORB); R(x - 7, 192, 4, 4, C_WHITE);   // Kristallkugel
   if (think) for (int k = 1; k <= (ap / 150) % 3 + 1; k++) R(18 + k * 4, 204 - k * 2, 2, 4 + k * 4, C_SEL);   // Funkwellen
 }
