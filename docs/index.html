@@ -93,7 +93,8 @@ const C = {
   EYE: rgb(0x0a, 0x14, 0x22), WHITE: rgb(0xff, 0xff, 0xff), OK: rgb(0x5b, 0xe3, 0x7d), LOW: rgb(0xff, 0x5a, 0x5f),
   TXT: rgb(0xe8, 0xed, 0xf5), DIM: rgb(0x8f, 0xb4, 0xd0), SEL: rgb(0xff, 0xcf, 0x4a), CHEEK: rgb(0xff, 0x8f, 0xa3),
   BUBBLE: rgb(0x9f, 0xd8, 0xf5), PLA: rgb(0xd6, 0xec, 0xf2), CAP: rgb(0xff, 0x5a, 0x5f), BAG: rgb(0xee, 0xf1, 0xf4),
-  FOOD: rgb(0xff, 0x9f, 0x43), PLAY: rgb(0xb8, 0xa4, 0xff), WIENER: rgb(0xe0, 0x74, 0x52), COOKIE: rgb(0xdd, 0xb2, 0x6a), SADDLE: rgb(0x9a, 0xa4, 0xb4)
+  FOOD: rgb(0xff, 0x9f, 0x43), PLAY: rgb(0xb8, 0xa4, 0xff), WIENER: rgb(0xe0, 0x74, 0x52), COOKIE: rgb(0xdd, 0xb2, 0x6a), SADDLE: rgb(0x9a, 0xa4, 0xb4),
+  BALLBG: rgb(0x04, 0x06, 0x0c), BALL: rgb(0x16, 0x1a, 0x24), BALLHI: rgb(0x2c, 0x33, 0x44), BALLWIN: rgb(0x1a, 0x2f, 0x8a)
 };
 const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
   NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21 };
@@ -128,7 +129,7 @@ function newEgg(seed) {
   return { hunger: 80, fun: 80, energy: 80, health: 100, age: 0, seed: (seed >>> 0) || 12345,
     sleeping: false, dead: false, sick: false, plastic: 0, menu: 0, msgIcon: -1, msgNo: false, msgUntil: 0, anim: 0, animArg: 0, animStart: 0,
     now: 0, coolUntil: 0, snd: 0, sndStart: 0, species: 0, speed: 0, vol: 2, sens: 2,
-    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0 };
+    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0 };
 }
 const clamp = (v) => (v < 0 ? 0 : v > 100 ? 100 : v);
 function rnd(S) { S.seed = (Math.imul(S.seed, 1664525) + 1013904223) >>> 0; return (S.seed >>> 16) % 10000; }
@@ -225,9 +226,37 @@ function newGame(S, t, sp) {
   say(S, t, I.HEART); anim(S, t, A.NEW);
 }
 let SET_ROWS = [0, 1, 2, 3, 4, 5, 6, 7];   // Eintraege im Einstellungsmenue (die Handy-Version laesst Akku, WLAN, Update weg)
-function pressLong(S) { if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2) S.ui = 0; else S.ui = 1; }
+const ANSWERS = [
+  "Mach erst|mal Line|Check.",
+  "Das regelt|der|Kompressor.",
+  "Frag den|Rigger.",
+  "Nur wenn|das Gaffa|reicht.",
+  "Ja, aber|nur mit|Nebel.",
+  "Nein, das|Pult bootet|noch.",
+  "Steck's|nochmal|aus und an.",
+  "Liegt am|Kabel. Wie|immer.",
+  "Die Antwort|liegt im|Case 17.",
+  "Signal ist|da. Ton|nicht.",
+  "Erst nach|dem Get-in.",
+  "Frag nach|dem Abbau|nochmal.",
+  "Ja. Wenn|das DMX|will.",
+  "Kommt aus|der Cloud.|Also nein.",
+  "Phantom-|speisung|vergessen.",
+  "Das ist ein|Problem der|Location.",
+  "Laut genug?|Nein. Nie.",
+  "Sieht gut|aus. Vom|FOH aus.",
+  "Ja, aber|der Kunde|will rot.",
+  "Show must|go on.|Ja.",
+];
+function gBall(S, t) {
+  if (S.ui !== 5 || (S.ballAns >= 0 && t < S.ballAt + 1500)) return;
+  let a = rnd(S) % 20; if (a === S.ballAns) a = (a + 1) % 20;
+  S.ballAns = a; S.ballAt = t; sfx(S, t, A.DIZZY);
+}
+function pressLong(S) { if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui === 5) S.ui = 0; else S.ui = 1; }
 function pressNext(S) {
-  if (S.ui === 1) S.uiSel = (S.uiSel + 1) % SET_ROWS.length;
+  if (S.ui === 1) S.uiSel = (S.uiSel + 1) % (SET_ROWS.length + 1);
+  else if (S.ui === 5) { S.ui = 1; S.uiSel = SET_ROWS.length; }
   else if (S.ui === 2) S.uiSel = (S.uiSel + 1) % 4;
   else if (S.ui === 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
@@ -241,9 +270,11 @@ function pressOk(S, t) {
     else if (it === 5) { S.ui = 3; S.req = 1; S.netState = 0; }
     else if (it === 6) { S.ui = 4; S.req = 2; S.netState = 1; S.netPct = 0; S.netErr = 0; }
     else if (it === 7) S.ui = 0;
+    else if (S.uiSel === SET_ROWS.length) { S.ui = 5; S.ballAns = -1; }
     return;
   }
   if (S.ui === 2) { if (S.uiSel === 3) { S.ui = 1; S.uiSel = 0; } else { newGame(S, t, S.uiSel); S.ui = 0; } return; }
+  if (S.ui === 5) { gBall(S, t); return; }
   if (S.ui >= 3) { S.ui = 1; return; }
   if (S.dead) { newGame(S, t, S.species); return; }
   if (S.menu === 0) actFeed(S, t); else if (S.menu === 1) actPlay(S, t); else if (S.menu === 2) actSleep(S, t);
@@ -454,7 +485,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       else if (r === 6) { const b = 'v' + FW_VERSION; T(b, 128 - tw(b, 2), y + 4, 2, fg); }
     }
     const cr = '(c) 2026 Daniel Lassak';
-    T(cr, dv(W - tw(cr, 1), 2) + 1, 228, 1, C.DIM);
+    T(cr, dv(W - tw(cr, 1), 2) + 1, 228, 1, S.uiSel === SET_ROWS.length ? C.SEL : C.DIM);
   }
   function drawPicker(S, t) {
     R(0, 0, W, H, C.BGS);
@@ -491,11 +522,29 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     if (ic >= 0) iconK(ic, INFX - dv(kW(ic, 2, 1), 2), 92, 2, 1, icc);
     if (S.netState !== 1 && S.netState !== 2 && S.netState !== 6) backRow(210, true);
   }
+  const isq = (n) => { let x = 0; while ((x + 1) * (x + 1) <= n) x++; return x; };
+  const disc = (cx, cy, r, c) => { for (let dy = -r; dy <= r; dy++) { const w = isq(r * r - dy * dy); R(cx - w, cy + dy, 2 * w + 1, 1, c); } };
+  function drawBall(S, t) {
+    R(0, 0, W, H, C.BALLBG);
+    const title = 'Das Pult weiss es'; T(title, dv(W - tw(title, 1), 2), 12, 1, C.DIM);
+    const ap = Math.floor(t - S.ballAt), shaking = S.ballAns >= 0 && ap >= 0 && ap < 900;
+    const bx = 67 + (shaking ? (dv(ap, 80) % 2) * 6 - 3 : 0), by = 104;
+    disc(bx, by, 62, C.BALL); disc(bx - 26, by - 30, 10, C.BALLHI);
+    if (S.ballAns < 0 || shaking) { disc(bx, by, 26, C.WHITE); T('8', bx - 10, by - 14, 4, C.EYE); }
+    else {
+      disc(bx, by, 46, C.BALLWIN);
+      const lines = ANSWERS[S.ballAns].split('|'), n = lines.length, y = by - n * 5 + 1;
+      for (let i = 0; i < n; i++) T(lines[i], bx - dv(tw(lines[i], 1), 2), y + i * 10, 1, C.TXT);
+    }
+    const h1 = 'Schuetteln!'; T(h1, dv(W - tw(h1, 1), 2), 186, 1, C.TXT);
+    const h2 = 'A fragen, B zurueck'; T(h2, dv(W - tw(h2, 1), 2), 200, 1, C.DIM);
+  }
   return function drawScene(S, t) {
     if (S.ui === 1) drawSettings(S, t);
     else if (S.ui === 2) drawPicker(S, t);
     else if (S.ui === 3) drawWifi(S, t);
     else if (S.ui === 4) drawUpdate(S, t);
+    else if (S.ui === 5) drawBall(S, t);
     else drawGame(S, t);
   };
 }
@@ -567,7 +616,7 @@ SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, 
     const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
     shSum += Math.abs(Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z) / 9.81 - 1); shN++;
   }
-  async function enableMotion() {
+  async function enableMotion() {   // auch fuers Orakel
     if (motionOn) return;
     try {
       if (typeof DeviceMotionEvent === 'undefined') { $('motion').textContent = 'Schütteln geht hier nicht'; return; }
@@ -608,7 +657,8 @@ SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, 
     const dt = Math.min(0.25, (t - last) / 1000); last = t;
     acc += dt * SPEEDF[S.speed]; let n = 0; while (acc >= 1 && n < 5000) { step(S); S.now += 1; acc -= 1; n++; }
     if (motionOn && t - shWin >= 1000) {
-      if (shN && S.ui === 0 && S.sens > 0) { const avg = shSum / shN; if (avg > WILD[S.sens]) gShake(S, t, 2); else if (avg > SOFT[S.sens]) gShake(S, t, 1); }
+      if (shN && S.ui === 5 && shSum / shN > SOFT[S.sens || 2]) gBall(S, t);
+      else if (shN && S.ui === 0 && S.sens > 0) { const avg = shSum / shN; if (avg > WILD[S.sens]) gShake(S, t, 2); else if (avg > SOFT[S.sens]) gShake(S, t, 1); }
       shSum = 0; shN = 0; shWin = t;
     }
     if (needs(S) && !S.sleeping && S.ui === 0 && t - lastAlert >= 60000) { sfx(S, t, SND.ALERT); lastAlert = t; }

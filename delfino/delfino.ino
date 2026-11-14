@@ -25,7 +25,8 @@ static const uint16_t C_BG = rgb(0x0b, 0x3a, 0x5c), C_BGS = rgb(0x05, 0x1c, 0x2e
   C_EYE = rgb(0x0a, 0x14, 0x22), C_WHITE = rgb(0xff, 0xff, 0xff), C_OK = rgb(0x5b, 0xe3, 0x7d), C_LOW = rgb(0xff, 0x5a, 0x5f),
   C_TXT = rgb(0xe8, 0xed, 0xf5), C_DIM = rgb(0x8f, 0xb4, 0xd0), C_SEL = rgb(0xff, 0xcf, 0x4a), C_CHEEK = rgb(0xff, 0x8f, 0xa3),
   C_BUBBLE = rgb(0x9f, 0xd8, 0xf5), C_PLA = rgb(0xd6, 0xec, 0xf2), C_CAP = rgb(0xff, 0x5a, 0x5f), C_BAG = rgb(0xee, 0xf1, 0xf4),
-  C_FOOD = rgb(0xff, 0x9f, 0x43), C_PLAY = rgb(0xb8, 0xa4, 0xff), C_WIENER = rgb(0xe0, 0x74, 0x52), C_COOKIE = rgb(0xdd, 0xb2, 0x6a), C_SADDLE = rgb(0x9a, 0xa4, 0xb4);
+  C_FOOD = rgb(0xff, 0x9f, 0x43), C_PLAY = rgb(0xb8, 0xa4, 0xff), C_WIENER = rgb(0xe0, 0x74, 0x52), C_COOKIE = rgb(0xdd, 0xb2, 0x6a), C_SADDLE = rgb(0x9a, 0xa4, 0xb4),
+  C_BALLBG = rgb(0x04, 0x06, 0x0c), C_BALL = rgb(0x16, 0x1a, 0x24), C_BALLHI = rgb(0x2c, 0x33, 0x44), C_BALLWIN = rgb(0x1a, 0x2f, 0x8a);
 
 struct Tama {
   float hunger, fun, energy, health;
@@ -48,6 +49,7 @@ struct Tama {
   int req;                      // Auftrag an die Hauptschleife: 1 WLAN einrichten, 2 Update
   int batt; bool chg, wifiOk;   // vom Stick gemeldet
   int netState, netPct, netErr; // Fortschritt WLAN/Update
+  int ballAns; int32_t ballAt;  // Orakel: Antwort (-1 = noch keine) und Zeitpunkt des Schuettelns
 };
 static Tama S;
 static M5Canvas cv(&M5.Display);
@@ -90,6 +92,7 @@ static void newEgg(uint32_t seed) {
   S.now = 0; S.coolUntil = 0; S.snd = 0; S.sndStart = 0;
   S.species = 0; S.speed = 0; S.vol = 2; S.sens = 2;
   S.ui = 0; S.uiSel = 0; S.req = 0; S.batt = -1; S.chg = false; S.wifiOk = false; S.netState = 0; S.netPct = 0; S.netErr = 0;
+  S.ballAns = -1; S.ballAt = 0;
 }
 static float clamp100(float v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
 static int rnd() { S.seed = S.seed * 1664525u + 1013904223u; return (int)((S.seed >> 16) % 10000u); }
@@ -186,13 +189,42 @@ static void newGame(int32_t t, int sp) {    // neues Tier, Einstellungen und Uhr
   S.now = now; S.speed = speed; S.vol = vol; S.sens = sens; S.batt = batt; S.chg = chg; S.wifiOk = wifiOk; S.species = sp;
   say(t, I_HEART); anim(t, A_NEW);
 }
+// ---- Orakel (versteckt: im Menue hinter "Zurueck" A druecken) ----
+static const char* const ANSWERS[20] = {
+  "Mach erst|mal Line|Check.",
+  "Das regelt|der|Kompressor.",
+  "Frag den|Rigger.",
+  "Nur wenn|das Gaffa|reicht.",
+  "Ja, aber|nur mit|Nebel.",
+  "Nein, das|Pult bootet|noch.",
+  "Steck's|nochmal|aus und an.",
+  "Liegt am|Kabel. Wie|immer.",
+  "Die Antwort|liegt im|Case 17.",
+  "Signal ist|da. Ton|nicht.",
+  "Erst nach|dem Get-in.",
+  "Frag nach|dem Abbau|nochmal.",
+  "Ja. Wenn|das DMX|will.",
+  "Kommt aus|der Cloud.|Also nein.",
+  "Phantom-|speisung|vergessen.",
+  "Das ist ein|Problem der|Location.",
+  "Laut genug?|Nein. Nie.",
+  "Sieht gut|aus. Vom|FOH aus.",
+  "Ja, aber|der Kunde|will rot.",
+  "Show must|go on.|Ja.",
+};
+static void gBall(int32_t t) {   // schuetteln oder A: neue Antwort
+  if (S.ui != 5 || (S.ballAns >= 0 && t < S.ballAt + 1500)) return;   // kurze Pause zwischen zwei Fragen
+  int a = rnd() % 20; if (a == S.ballAns) a = (a + 1) % 20;
+  S.ballAns = a; S.ballAt = t; sfx(t, A_DIZZY);
+}
 // ---- Tasten ----
-static const int SET_N = 8;   // Einstellungen: Neues Spiel, Tempo, Lautstaerke, Sensoren, Akku, WLAN, Update, Zurueck
+static const int SET_N = 8;   // Einstellungen: Neues Spiel, Tempo, Lautstaerke, Sensoren, Akku, WLAN, Update, Zurueck (+ versteckt: Orakel)
 static void pressLong() {     // Taste B lang: Einstellungen auf/zu
-  if (S.ui == 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2) S.ui = 0; else S.ui = 1;
+  if (S.ui == 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui == 5) S.ui = 0; else S.ui = 1;
 }
 static void pressNext() {
-  if (S.ui == 1) S.uiSel = (S.uiSel + 1) % SET_N;
+  if (S.ui == 1) S.uiSel = (S.uiSel + 1) % (SET_N + 1);   // nach "Zurueck" kommt der versteckte Platz
+  else if (S.ui == 5) { S.ui = 1; S.uiSel = SET_N; }
   else if (S.ui == 2) S.uiSel = (S.uiSel + 1) % 4;
   else if (S.ui == 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
@@ -205,9 +237,11 @@ static void pressOk(int32_t t) {
     else if (S.uiSel == 5) { S.ui = 3; S.req = 1; S.netState = 0; }
     else if (S.uiSel == 6) { S.ui = 4; S.req = 2; S.netState = 1; S.netPct = 0; S.netErr = 0; }
     else if (S.uiSel == 7) S.ui = 0;
+    else if (S.uiSel == SET_N) { S.ui = 5; S.ballAns = -1; }
     return;
   }
   if (S.ui == 2) { if (S.uiSel == 3) { S.ui = 1; S.uiSel = 0; } else { newGame(t, S.uiSel); S.ui = 0; } return; }
+  if (S.ui == 5) { gBall(t); return; }
   if (S.ui >= 3) { S.ui = 1; return; }
   if (S.dead) { newGame(t, S.species); return; }
   if (S.menu == 0) gFeed(t); else if (S.menu == 1) gPlay(t); else if (S.menu == 2) gSleep(t);
@@ -445,7 +479,7 @@ static void drawSettings(int32_t t) {
     else if (r == 6) { char b[12]; snprintf(b, sizeof(b), "v%d", FW_VERSION); T(b, 128 - tw(b, 2), y + 4, 2, fg); }
   }
   const char* cr = "(c) 2026 Daniel Lassak";
-  T(cr, (W - tw(cr, 1)) / 2 + 1, 228, 1, C_DIM);
+  T(cr, (W - tw(cr, 1)) / 2 + 1, 228, 1, S.uiSel == SET_N ? C_SEL : C_DIM);   // leuchtet, wenn der versteckte Platz gewaehlt ist
 }
 static void drawPicker(int32_t t) {   // Tier fuer das neue Spiel waehlen
   R(0, 0, W, H, C_BGS);
@@ -482,11 +516,33 @@ static void drawUpdate(int32_t t) {
   if (ic >= 0) iconK(ic, INFX - kW(ic, 2, 1) / 2, 92, 2, 1, icc);
   if (S.netState != 1 && S.netState != 2 && S.netState != 6) backRow(210, true);
 }
+static int isq(int n) { int x = 0; while ((x + 1) * (x + 1) <= n) x++; return x; }
+static void disc(int cx, int cy, int r, uint16_t c) { for (int dy = -r; dy <= r; dy++) { int w = isq(r * r - dy * dy); R(cx - w, cy + dy, 2 * w + 1, 1, c); } }
+static void drawBall(int32_t t) {   // das Orakel
+  R(0, 0, W, H, C_BALLBG);
+  const char* title = "Das Pult weiss es"; T(title, (W - tw(title, 1)) / 2, 12, 1, C_DIM);
+  int ap = t - S.ballAt; bool shaking = S.ballAns >= 0 && ap >= 0 && ap < 900;
+  int bx = 67 + (shaking ? ((ap / 80) % 2) * 6 - 3 : 0), by = 104;
+  disc(bx, by, 62, C_BALL); disc(bx - 26, by - 30, 10, C_BALLHI);
+  if (S.ballAns < 0 || shaking) { disc(bx, by, 26, C_WHITE); T("8", bx - 10, by - 14, 4, C_EYE); }
+  else {
+    disc(bx, by, 46, C_BALLWIN);
+    const char* a = ANSWERS[S.ballAns]; int n = 1; for (const char* q = a; *q; q++) if (*q == '|') n++;
+    int y = by - n * 5 + 1; const char* s = a;
+    for (int i = 0; i < n; i++) {
+      char line[16]; int k = 0; while (*s && *s != '|' && k < 15) line[k++] = *s++; line[k] = 0; if (*s == '|') s++;
+      T(line, bx - tw(line, 1) / 2, y + i * 10, 1, C_TXT);
+    }
+  }
+  const char* h1 = "Schuetteln!"; T(h1, (W - tw(h1, 1)) / 2, 186, 1, C_TXT);
+  const char* h2 = "A fragen, B zurueck"; T(h2, (W - tw(h2, 1)) / 2, 200, 1, C_DIM);
+}
 static void drawScene(int32_t t) {
   if (S.ui == 1) drawSettings(t);
   else if (S.ui == 2) drawPicker(t);
   else if (S.ui == 3) drawWifi(t);
   else if (S.ui == 4) drawUpdate(t);
+  else if (S.ui == 5) drawBall(t);
   else drawGame(t);
 }
 
@@ -677,7 +733,8 @@ void loop() {
   // Akku alle 5 s abfragen
   if (now - lastBatt >= 5000 || lastBatt == 0) { lastBatt = now; S.batt = M5.Power.getBatteryLevel(); S.chg = (int)M5.Power.isCharging() == 1; }
   // Bewegung: 50x pro Sekunde messen, jede Sekunde auswerten
-  bool sensing = S.ui == 0 && S.sens > 0 && screenOn;   // Display aus: Sensoren aus
+  bool ballMode = S.ui == 5 && screenOn;
+  bool sensing = (S.ui == 0 && S.sens > 0 && screenOn) || ballMode;   // Display aus: Sensoren aus
   if (sensing && now - lastImu >= 20) {
     lastImu = now; float ax, ay, az;
     if (M5.Imu.getAccel(&ax, &ay, &az)) { shSum += fabsf(sqrtf(ax * ax + ay * ay + az * az) - 1.0f); shN++; }
@@ -686,7 +743,8 @@ void loop() {
     if (shN) {
       float avg = shSum / shN;
       if (DEBUG) Serial.printf("Schuetteln: Schnitt %.2f g\n", avg);
-      if (sensing) { if (avg > SHAKE_WILD[S.sens]) gShake(t, 2); else if (avg > SHAKE_SOFT[S.sens]) gShake(t, 1); }
+      if (ballMode) { if (avg > SHAKE_SOFT[S.sens ? S.sens : 2]) gBall(t); }
+      else if (sensing) { if (avg > SHAKE_WILD[S.sens]) gShake(t, 2); else if (avg > SHAKE_SOFT[S.sens]) gShake(t, 1); }
     }
     shSum = 0; shN = 0; shWin = now;
   }
@@ -705,7 +763,7 @@ void loop() {
   }
   // Anzeige und Energiesparen: nach 10 s dunkler, nach 1 min aus (WLAN-Einrichtung und Update ausgenommen).
   // Nur ein Tastendruck weckt das Display wieder.
-  bool keepOn = S.ui >= 3;
+  bool keepOn = S.ui == 3 || S.ui == 4;
   uint32_t idle = now - lastAct;
   if (!keepOn && idle > OFF_MS) {
     if (screenOn) { M5.Display.setBrightness(0); M5.Display.sleep(); screenOn = false; curBright = 0; }
