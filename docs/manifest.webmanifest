@@ -1,0 +1,10 @@
+{
+  "name": "Delfino",
+  "short_name": "Delfino",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#031623",
+  "theme_color": "#062033",
+  "icons": [{ "src": "icon.png", "sizes": "180x180", "type": "image/png" }]
+}
