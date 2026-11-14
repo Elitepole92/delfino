@@ -70,7 +70,6 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 </div>
 <div class="extras">
   <button class="pill" id="motion">Schütteln einschalten</button>
-  <button class="pill" id="blow">Pusten</button>
 </div>
 <p class="hint" id="hint">Tipp: In Safari über Teilen → „Zum Home-Bildschirm“ wird Delfino zur App.</p>
 <script>
@@ -204,11 +203,6 @@ function gShake(S, t, lvl) {
   if (S.sleeping) { S.sleeping = false; S.fun = clamp(S.fun - 5); say(S, t, -1); anim(S, t, A.STARTLE); return; }
   if (lvl === 1) { S.fun = clamp(S.fun + 10); say(S, t, I.HEART); anim(S, t, A.WAVES); }
   else { S.fun = clamp(S.fun - 15); if (rnd(S) < 3333) S.sick = true; say(S, t, -1); anim(S, t, A.DIZZY); }
-}
-function gHear(S, t, kind) {
-  if (S.dead || t < S.coolUntil) return;
-  if (kind === 1) { if (S.sleeping) return; S.coolUntil = t + 6000; S.fun = clamp(S.fun + 8); say(S, t, I.HEART); anim(S, t, A.BUBBLES); }
-  else { S.coolUntil = t + 6000; S.sleeping = false; S.fun = clamp(S.fun - 5); say(S, t, -1); anim(S, t, A.STARTLE); }
 }
 function catchUp(S, target) {
   if (target <= S.now) return;
@@ -379,8 +373,6 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       drawPlastic(i, sx, ap < 500 ? sy : ly + 4);
     } else if (an === A.WAVES) {
       for (let r = 0; r < 2; r++) for (let k = 0; k < 16; k++) R((k * 16 + dv(ap, 20)) % 256 - 16, 40 + r * 110 + ((k + r) % 2) * 2, 8, 2, C.BUBBLE);
-    } else if (an === A.BUBBLES) {
-      for (let i = 0; i < 6; i++) { const y = 140 - (dv(ap, 6) + i * 23) % 100, x = 6 + i * 7 + ((dv(ap, 100) + i) % 2) * 2; R(x, y, 5, 5, C.BUBBLE); R(x + 1, y + 1, 3, 3, bg); }
     }
     let jy = 0, dx = 0;
     if (an === A.PLAY) jy = -dv(ap * (1200 - ap), 24000);
@@ -388,7 +380,6 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     else if (an === A.WAVES) jy = -((dv(ap, 150) % 2) * 3);
     else if (an === A.STARTLE) jy = ap < 200 ? -dv(ap, 20) : (ap < 600 ? -10 : -dv(1200 - ap, 60));
     if (an === A.DIZZY) dx = (dv(ap, 60) % 2) * 4 - 2;
-    else if (an === A.BUBBLES) dx = -(ap < 600 ? dv(ap, 50) : dv(1200 - ap, 50));
     gkn = 5; gkd = 4;
     const cx = DCX + dx, bob = (!S.sleeping && !S.dead && (Math.floor(t / 500) % 2) === 1) ? 2 : 0, cy = DCY + bob + jy;
     const pend = an === A.MEDIC && ap < 500;
@@ -429,13 +420,10 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     const name = NAMES[S.species], nw = tw(name, 2) + 4;
     R(CORNX - nw + 1, NAMEY, nw - 2, 18, C.SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C.SEL);
     T(name, CORNX - nw + 3, NAMEY + 2, 2, C.BG);
-    let ax = CORNX;
     if (!S.dead) {
-      const buf = String(Math.floor(S.age / 60)), cw = kW(I.CLOCK, 3, 2);
-      ax = CORNX - tw(buf, 2) - cw - 2;
+      const buf = String(Math.floor(S.age / 60)), cw = kW(I.CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2;
       iconK(I.CLOCK, ax, AGEY + 3, 3, 2, C.DIM); T(buf, ax + cw + 3, AGEY, 2, C.DIM);
     }
-    if (needs(S) && !S.sleeping && (t % 1000) < 500) R(ax - 9, AGEY + 5, 6, 6, C.LOW);
     drawMenu(S, an, sk);
   }
   const drawBars = (x, y, n, on, off) => { for (let i = 0; i < 3; i++) R(x + i * 7, y + 12 - i * 4, 5, 4 + i * 4, i < n ? on : off); };
@@ -590,7 +578,6 @@ SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, 
   $('a').addEventListener('pointerdown', () => press($('a'), true));
   for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) $('a').addEventListener(ev, () => press($('a'), false));
   $('a').addEventListener('click', doOk);
-  $('blow').addEventListener('click', () => { audio(); if (S.ui === 0 && S.sens > 0) { gHear(S, now(), 1); save(); } });
   document.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
     if (k === 'a' || k === 'enter') { e.preventDefault(); doOk(); }

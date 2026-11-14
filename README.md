@@ -2,7 +2,7 @@
 
 Ein kleines Tamagotchi fuer den **M5StickS3**: Delfin, Orca oder Schildkroete im Wasser.
 Fuettern (vegane Wienerle und Haferkekse), spielen, schlafen legen, Plastik rausfischen,
-Medizin geben. Schuetteln macht Wellen, Pusten macht Blubberblasen.
+Medizin geben. Schuetteln macht Wellen.
 
 ## Bedienung
 

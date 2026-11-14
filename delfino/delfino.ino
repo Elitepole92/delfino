@@ -172,11 +172,6 @@ static void gShake(int32_t t, int lvl) {   // 1 = sanft, 2 = wild
   if (lvl == 1) { S.fun = clamp100(S.fun + 10); say(t, I_HEART); anim(t, A_WAVES); }
   else { S.fun = clamp100(S.fun - 15); if (rnd() < 3333) S.sick = true; say(t, -1); anim(t, A_DIZZY); }
 }
-static void gHear(int32_t t, int kind) {    // 1 = Pusten, 2 = Knall
-  if (S.dead || t < S.coolUntil) return;
-  if (kind == 1) { if (S.sleeping) return; S.coolUntil = t + 6000; S.fun = clamp100(S.fun + 8); say(t, I_HEART); anim(t, A_BUBBLES); }
-  else { S.coolUntil = t + 6000; S.sleeping = false; S.fun = clamp100(S.fun - 5); say(t, -1); anim(t, A_STARTLE); }
-}
 static void catchUp(uint32_t target) {      // Stick war aus: das Tier hat geschlafen, Zeit lief 10x langsamer
   if (target <= S.now) return;
   uint32_t n = (target - S.now) / 10; if (n > 60480) n = 60480;   // hoechstens eine Woche
@@ -364,8 +359,6 @@ static void drawGame(int32_t t) {
     drawPlastic(i, sx, ap < 500 ? sy : ly + 4);   // liegt noch, bis der Haken es greift
   } else if (an == A_WAVES) {     // Wellen ziehen durchs Wasser
     for (int r = 0; r < 2; r++) for (int k = 0; k < 16; k++) R((k * 16 + ap / 20) % 256 - 16, 40 + r * 110 + ((k + r) % 2) * 2, 8, 2, C_BUBBLE);
-  } else if (an == A_BUBBLES) {   // Blubberblasen steigen auf
-    for (int i = 0; i < 6; i++) { int y = 140 - (ap / 6 + i * 23) % 100, x = 6 + i * 7 + ((ap / 100 + i) % 2) * 2; R(x, y, 5, 5, C_BUBBLE); R(x + 1, y + 1, 3, 3, bg); }
   }
   int jy = 0, dx = 0;
   if (an == A_PLAY) jy = -((ap * (1200 - ap)) / 24000);       // Sprung
@@ -373,7 +366,6 @@ static void drawGame(int32_t t) {
   else if (an == A_WAVES) jy = -(((ap / 150) % 2) * 3);       // schaukelt
   else if (an == A_STARTLE) jy = ap < 200 ? -(ap / 20) : (ap < 600 ? -10 : -((1200 - ap) / 60));
   if (an == A_DIZZY) dx = ((ap / 60) % 2) * 4 - 2;            // wackelt
-  else if (an == A_BUBBLES) dx = -(ap < 600 ? ap / 50 : (1200 - ap) / 50);   // schwimmt den Blasen nach
   gkn = 5; gkd = 4;
   int cx = DCX + dx, bob = (!S.sleeping && !S.dead && ((t / 500) % 2) == 1) ? 2 : 0, cy = DCY + bob + jy;
   bool pend = an == A_MEDIC && ap < 500;   // Kapsel noch unterwegs: sieht noch krank aus
@@ -412,19 +404,16 @@ static void drawGame(int32_t t) {
     icon(id, x, y, 2, C_TXT);
     if (S.msgNo) iconNo(id, x, y, 2);
   }
-  // Name und Alter rechts unten, links daneben der rote Warnpunkt
+  // Name und Alter rechts unten
   const char* name = NAMES[S.species];
   int nw = tw(name, 2) + 4;
   R(CORNX - nw + 1, NAMEY, nw - 2, 18, C_SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C_SEL);
   T(name, CORNX - nw + 3, NAMEY + 2, 2, C_BG);
-  int ax = CORNX;
   if (!S.dead) {
     char buf[12]; snprintf(buf, sizeof(buf), "%u", (unsigned)(S.age / 60));
-    int cw = kW(I_CLOCK, 3, 2);
-    ax = CORNX - tw(buf, 2) - cw - 2;
+    int cw = kW(I_CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2;
     iconK(I_CLOCK, ax, AGEY + 3, 3, 2, C_DIM); T(buf, ax + cw + 3, AGEY, 2, C_DIM);
   }
-  if (needs() && !S.sleeping && (t % 1000) < 500) R(ax - 9, AGEY + 5, 6, 6, C_LOW);
   drawMenu(an, sk);
 }
 
@@ -537,19 +526,13 @@ static bool loadState() {
 #define DEBUG 0                                              // 1 = Messwerte im Seriellen Monitor (115200 Baud)
 static const float SHAKE_SOFT[4] = { 0, 1.2f, 0.9f, 0.7f };   // mittlere Abweichung von 1 g ueber 1 s: sanft
 static const float SHAKE_WILD[4] = { 0, 2.4f, 1.8f, 1.4f };   // ... ab hier: wild
-static const float BLOW_LEVEL[4] = { 0, 12000, 9000, 6500 };  // Mikro-Pegel fuer Pusten
-static const int   BLOW_COUNT[4] = { 0, 16, 14, 10 };         // so viele laute Messungen am Stueck (je ca. 50 ms)
-static const float BANG_LEVEL[4] = { 0, 30000, 26000, 20000 };// kurzer, sehr lauter Ausschlag = Knall
 static const uint8_t VOLUME[4] = { 0, 40, 90, 160 };
 static const uint32_t TICK_MS[3] = { 1000, 100, 20 };       // Zeitraffer 1x / 10x / 50x: so oft vergeht eine Sekunde
 
-static uint32_t lastTick, lastDraw, lastSave, lastAct, lastImu, shWin, lastMic, lastAlert, lastBatt;
+static uint32_t lastTick, lastDraw, lastSave, lastAct, lastImu, shWin, lastAlert, lastBatt;
 static int curBright = -1;
 static float shSum = 0; static int shN = 0;
-static int loudCnt = 0; static float loudPeak = 0;
-static bool micOn = false;
 static int playId = -1, playIdx = -1; static uint32_t playStart;
-static int16_t micBuf[256];
 static WebServer web(80);
 static DNSServer dns;
 static bool apOn = false;
@@ -585,8 +568,6 @@ static uint32_t buildTime() {   // Zeitpunkt, an dem der Sketch kompiliert wurde
   int m = (int)(strstr(mons, mon) - mons) / 3 + 1;
   return daysFromCivil(y, m, d) * 86400u + hh * 3600u + mi * 60u + ss;
 }
-static void micStart() { M5.Speaker.end(); if (S.sens == 0 || apOn || !screenOn) { micOn = false; return; } M5.Mic.begin(); micOn = true; loudCnt = 0; loudPeak = 0; }   // Sensoren aus: Mikro bleibt aus
-static void micStop() { if (micOn) { M5.Mic.end(); micOn = false; } }
 static void drawNow() { drawScene((int32_t)millis()); cv.pushSprite(0, 0); }
 static bool wifiSaved() { prefs.begin("wifi", true); bool ok = prefs.getString("s", "").length() > 0; prefs.end(); return ok; }
 
@@ -613,9 +594,9 @@ static void apStart() {
 static void apStop() { if (!apOn) return; web.stop(); dns.stop(); WiFi.softAPdisconnect(true); WiFi.mode(WIFI_OFF); apOn = false; }
 
 // ---- Update von GitHub holen ----
-static void updFail(int code) { S.netState = 4; S.netErr = code; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); setCpuFrequencyMhz(80); micStart(); }
+static void updFail(int code) { S.netState = 4; S.netErr = code; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); setCpuFrequencyMhz(80); }
 static void doUpdate() {
-  micStop(); M5.Speaker.end(); setCpuFrequencyMhz(240);   // fuer die verschluesselte Verbindung schneller
+  M5.Speaker.end(); setCpuFrequencyMhz(240);   // fuer die verschluesselte Verbindung schneller
   prefs.begin("wifi", true); String ssid = prefs.getString("s", ""), pass = prefs.getString("p", ""); prefs.end();
   if (ssid.length() == 0) { updFail(1); return; }
   S.netState = 1; drawNow();
@@ -629,7 +610,7 @@ static void doUpdate() {
     if (http.begin(cli, String(UPDATE_URL) + "version.txt")) { if (http.GET() == 200) ver = http.getString().toInt(); http.end(); } }
   if (DEBUG) Serial.printf("Update: online v%d, hier v%d\n", ver, FW_VERSION);
   if (ver <= 0) { updFail(3); return; }
-  if (ver <= FW_VERSION) { S.netState = 5; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); setCpuFrequencyMhz(80); micStart(); return; }
+  if (ver <= FW_VERSION) { S.netState = 5; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); setCpuFrequencyMhz(80); return; }
   S.netState = 2; S.netPct = 0; drawNow();
   saveState();
   httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
@@ -661,10 +642,10 @@ void setup() {
   S.wifiOk = wifiSaved();
   idleA = digitalRead(BTN_A_PIN); idleB = digitalRead(BTN_B_PIN);   // Ruhepegel der Tasten merken
   setCpuFrequencyMhz(80);                                            // reicht fuers Spiel und spart Strom
-  Serial.printf("Delfino v%d: eingebaute Uhr %s, Spielzeit %02d:%02d\n", FW_VERSION, hasRtc ? "gefunden" : "nicht gefunden", hourOf(S.now), (int)((S.now / 60) % 60));
+  Serial.printf("Delfino v%d: eingebaute Uhr %s, Spielzeit %02d:%02d, Startgrund %d\n", FW_VERSION, hasRtc ? "gefunden" : "nicht gefunden", hourOf(S.now), (int)((S.now / 60) % 60), (int)esp_reset_reason());
   saveState();
-  micStart();
-  lastTick = lastDraw = lastSave = lastAct = lastImu = shWin = lastMic = lastAlert = millis(); lastBatt = 0;
+  M5.Mic.end(); M5.Speaker.end();                 // Mikro wird nicht gebraucht, Lautsprecher nur fuer Melodien
+  lastTick = lastDraw = lastSave = lastAct = lastImu = shWin = lastAlert = millis(); lastBatt = 0;
 }
 
 void loop() {
@@ -678,13 +659,14 @@ void loop() {
   if (bl) { pressLong(); any = true; }
   else if (bn) { pressNext(); any = true; }
   if (any) { lastAct = now; if (!S.snd) sfx(t, S_CLICK); }
+  if (M5.BtnPWR.wasClicked() && screenOn && S.ui < 3) lastAct = now - OFF_MS - 1;   // Ausschalttaste kurz: Display aus, Stromsparschlaf
   // Auftraege aus den Einstellungen
-  if (S.req == 1) { S.req = 0; micStop(); apStart(); }
+  if (S.req == 1) { S.req = 0; apStart(); }
   if (apOn) {
     dns.processNextRequest(); web.handleClient();
     uint32_t m = millis();   // frisch messen: apSince/apSaved koennen juenger sein als 'now'
     if ((apSaved && m - apSaved > 5000) || m - apSince > AP_MAX_MS) S.ui = 1;   // gespeichert oder zu lange offen: zu
-    if (S.ui != 3) { apStop(); micStart(); }
+    if (S.ui != 3) apStop();
   }
   if (S.req == 2) { S.req = 0; doUpdate(); lastTick = millis(); }
   // Zeit (mit Zeitraffer): jede Sekunde ein Spielschritt, die Uhr laeuft mit
@@ -696,7 +678,6 @@ void loop() {
   if (now - lastBatt >= 5000 || lastBatt == 0) { lastBatt = now; S.batt = M5.Power.getBatteryLevel(); S.chg = (int)M5.Power.isCharging() == 1; }
   // Bewegung: 50x pro Sekunde messen, jede Sekunde auswerten
   bool sensing = S.ui == 0 && S.sens > 0 && screenOn;   // Display aus: Sensoren aus
-  if (!sensing && micOn) micStop(); else if (sensing && !micOn && playId < 0 && !apOn) micStart();
   if (sensing && now - lastImu >= 20) {
     lastImu = now; float ax, ay, az;
     if (M5.Imu.getAccel(&ax, &ay, &az)) { shSum += fabsf(sqrtf(ax * ax + ay * ay + az * az) - 1.0f); shN++; }
@@ -709,30 +690,17 @@ void loop() {
     }
     shSum = 0; shN = 0; shWin = now;
   }
-  // Mikrofon: nur wenn gerade kein Ton spielt
-  if (micOn && now - lastMic >= 50) {
-    lastMic = now;
-    if (M5.Mic.record(micBuf, 256, 16000)) {
-      while (M5.Mic.isRecording()) delay(1);
-      long sum = 0; for (int i = 0; i < 256; i++) sum += micBuf[i];
-      float mean = sum / 256.0f, sq = 0; for (int i = 0; i < 256; i++) { float v = micBuf[i] - mean; sq += v * v; }
-      float rms = sqrtf(sq / 256);
-      if (DEBUG) Serial.printf("Mikro: %.0f\n", rms);
-      if (sensing && rms > BLOW_LEVEL[S.sens]) { loudCnt++; if (rms > loudPeak) loudPeak = rms; if (loudCnt == BLOW_COUNT[S.sens]) gHear(t, 1); }
-      else { if (sensing && loudCnt >= 1 && loudCnt <= 2 && loudPeak > BANG_LEVEL[S.sens]) gHear(t, 2); loudCnt = 0; loudPeak = 0; }
-    }
-  }
   // Ab und zu piepen, wenn er was braucht
   if (needs() && !S.sleeping && S.ui == 0 && now - lastAlert >= 60000) { sfx(t, S_ALERT); lastAlert = now; }
-  // Melodie abspielen (Mikro solange aus, sonst hoert es den Lautsprecher)
+  // Melodie abspielen (Lautsprecher nur waehrend der Melodie an)
   if (S.snd) {
     playId = (S.vol == 0 || apOn) ? -1 : S.snd; playStart = S.sndStart; playIdx = -1; S.snd = 0;
-    if (playId >= 0 && MELS[playId]) { micStop(); M5.Speaker.begin(); M5.Speaker.setVolume(VOLUME[S.vol]); } else playId = -1;
+    if (playId >= 0 && MELS[playId]) { M5.Speaker.begin(); M5.Speaker.setVolume(VOLUME[S.vol]); } else playId = -1;
   }
   if (playId >= 0) {
     const int16_t* m = MELS[playId]; int32_t e = (int32_t)(now - playStart), acc = 0; int i = 0;
     while (m[i] >= 0 && e >= acc + m[i + 1]) { acc += m[i + 1]; i += 2; }
-    if (m[i] < 0) { playId = -1; micStart(); lastMic = now + 100; }
+    if (m[i] < 0) { playId = -1; M5.Speaker.end(); }
     else if (i != playIdx) { playIdx = i; if (m[i] > 0) M5.Speaker.tone(m[i], m[i + 1]); }
   }
   // Anzeige und Energiesparen: nach 10 s dunkler, nach 1 min aus (WLAN-Einrichtung und Update ausgenommen).
@@ -740,7 +708,7 @@ void loop() {
   bool keepOn = S.ui >= 3;
   uint32_t idle = now - lastAct;
   if (!keepOn && idle > OFF_MS) {
-    if (screenOn) { M5.Display.setBrightness(0); M5.Display.sleep(); screenOn = false; curBright = 0; micStop(); }
+    if (screenOn) { M5.Display.setBrightness(0); M5.Display.sleep(); screenOn = false; curBright = 0; }
   } else {
     if (!screenOn) { M5.Display.wakeup(); screenOn = true; curBright = -1; lastDraw = 0; }
     bool moving = S.anim && (int32_t)(now - S.animStart) < 1200;
