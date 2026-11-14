@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Delfino</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Delfino">
+<meta name="theme-color" content="#062033">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<style>
+/* Ein Stick in der Hand: Gehaeuse mit Display, darunter die zwei Tasten wie am M5StickS3 */
+:root {
+  --sea-top: #0b3a5c; --sea-deep: #031623; --shell: #f26a21; --shell-dk: #b94a0c; --shell-hi: #ff9a5a;
+  --key: #18202c; --key-hi: #2a3546; --ink: #fff6ee; --dim: #9fc3d9; --ok: #5be37d;
+  --font: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: radial-gradient(120% 80% at 50% 0%, var(--sea-top), var(--sea-deep) 70%) fixed, var(--sea-deep);
+  color: var(--ink); font: 15px/1.4 var(--font); overflow: hidden; touch-action: manipulation;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  padding: max(12px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+.shell {
+  background: linear-gradient(160deg, var(--shell-hi), var(--shell) 30%, var(--shell) 70%, var(--shell-dk));
+  border-radius: 34px; padding: 16px 16px 20px; box-shadow: inset 0 -6px 0 var(--shell-dk), 0 18px 40px rgba(0,0,0,.45);
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+}
+.bezel { background: #07090d; border-radius: 18px; padding: 10px; }
+canvas {
+  display: block; image-rendering: pixelated; border-radius: 6px; background: #0b3a5c;
+  width: min(62vw, calc((100svh - 270px) * 0.5625), 300px); aspect-ratio: 135 / 240; height: auto;
+}
+.keys { display: flex; align-items: center; justify-content: center; gap: 30px; width: 100%; }
+.key { display: grid; justify-items: center; gap: 5px; font-weight: 700; font-size: 11px; letter-spacing: .14em; color: rgba(255,255,255,.95); }
+.key small { font-weight: 600; letter-spacing: .04em; font-size: 10px; opacity: .85; }
+.key button {
+  border: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--key-hi), var(--key));
+  color: #fff; font: 800 22px var(--font); box-shadow: 0 5px 0 rgba(0,0,0,.4); cursor: pointer;
+}
+#a { width: 82px; height: 82px; }
+#b { width: 60px; height: 60px; font-size: 18px; }
+.key button:active, .key button.down { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+.extras { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.pill {
+  border: 1px solid rgba(159,195,217,.35); background: rgba(3,22,35,.55); color: var(--ink); border-radius: 999px;
+  padding: 9px 16px; font: 600 14px var(--font); cursor: pointer;
+}
+.pill.on { border-color: var(--ok); color: var(--ok); }
+.pill[hidden] { display: none; }
+button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.hint { color: var(--dim); font-size: 12.5px; text-align: center; max-width: 34ch; margin: 0; }
+@media (prefers-reduced-motion: reduce) { .key button:active, .key button.down { transform: none; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="bezel"><canvas id="lcd" width="540" height="960" aria-label="Spiel-Display"></canvas></div>
+  <div class="keys">
+    <div class="key"><button id="a" aria-label="Taste A: ausführen">A</button>OK</div>
+    <div class="key"><button id="b" aria-label="Taste B: weiter, lang drücken: Menü">B</button>WEITER<small>lang: Menü</small></div>
+  </div>
+</div>
+<div class="extras">
+  <button class="pill" id="motion">Schütteln einschalten</button>
+  <button class="pill" id="blow">Pusten</button>
+</div>
+<p class="hint" id="hint">Tipp: In Safari über Teilen → „Zum Home-Bildschirm“ wird Delfino zur App.</p>
+<script>
+const FW_VERSION = 0;
+// ===== TAMA CORE (Logik + Zeichnen, 135x240 hochkant) – identisch mit dem Sketch =====
+const rgb = (r, g, b) => ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+const C = {
+  BG: rgb(0x0b, 0x3a, 0x5c), BGS: rgb(0x05, 0x1c, 0x2e), BGN: rgb(0x08, 0x2b, 0x47), PANEL: rgb(0x06, 0x22, 0x38),
+  BODY: rgb(0x6e, 0xb6, 0xe6), FIN: rgb(0x3f, 0x86, 0xc0), BELLY: rgb(0xd8, 0xee, 0xfa),
+  SICK: rgb(0x9c, 0xc9, 0x8f), SICKFIN: rgb(0x6f, 0x9e, 0x63), DEAD: rgb(0x8a, 0x93, 0xa3), DEADFIN: rgb(0x6d, 0x75, 0x84),
+  ORCA: rgb(0x1f, 0x24, 0x2e), ORCAB: rgb(0xf2, 0xf5, 0xf8), ORCASICK: rgb(0x2f, 0x4d, 0x3a), MOUTHL: rgb(0xc0, 0xc8, 0xd0),
+  SHELL: rgb(0x6b, 0x9e, 0x3c), SHELLD: rgb(0x4a, 0x73, 0x28), SKIN: rgb(0x9c, 0xc4, 0x6a), TBELLY: rgb(0xe8, 0xd8, 0x8c),
+  SHELLSICK: rgb(0x8f, 0x9a, 0x5a), SKINSICK: rgb(0xc8, 0xd2, 0x9c),
+  EYE: rgb(0x0a, 0x14, 0x22), WHITE: rgb(0xff, 0xff, 0xff), OK: rgb(0x5b, 0xe3, 0x7d), LOW: rgb(0xff, 0x5a, 0x5f),
+  TXT: rgb(0xe8, 0xed, 0xf5), DIM: rgb(0x8f, 0xb4, 0xd0), SEL: rgb(0xff, 0xcf, 0x4a), CHEEK: rgb(0xff, 0x8f, 0xa3),
+  BUBBLE: rgb(0x9f, 0xd8, 0xf5), PLA: rgb(0xd6, 0xec, 0xf2), CAP: rgb(0xff, 0x5a, 0x5f), BAG: rgb(0xee, 0xf1, 0xf4),
+  FOOD: rgb(0xff, 0x9f, 0x43), PLAY: rgb(0xb8, 0xa4, 0xff), WIENER: rgb(0xe0, 0x74, 0x52), COOKIE: rgb(0xdd, 0xb2, 0x6a), SADDLE: rgb(0x9a, 0xa4, 0xb4)
+};
+const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
+  NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21 };
+const ICONS = [
+  ['#.#.#...##.', '#.#.#..###.', '#.#.#..###.', '#####..###.', '.###...###.', '..#.....#..', '..#.....#..', '..#.....#..', '..#.....#..'],
+  ['..########..', '.##########.', '###.####.###', '##...##.#.##', '###.####.###', '############', '####....####', '.##......##.'],
+  ['....###.####', '..####....#.', '.####....#..', '.####...####', '.####.......', '.#####...##.', '..########..', '....####....'],
+  ['.....#.....', '.#.......#.', '...#####...', '..#######..', '#.#######.#', '..#######..', '...#####...', '.#.......#.', '.....#.....'],
+  ['..........##.', '.........#..#', '........#...#', '.......#....#', '......#.....#', '....###.....#', '...###....#.#', '..##.......##', '.##..........'],
+  ['....####....', '....#..#....', '############', '#####..#####', '###......###', '###......###', '#####..#####', '############'],
+  ['.##...##.', '####.####', '#########', '.#######.', '..#####..', '...###...', '....#....'],
+  ['....##.', '...##..', '..##...', '.#####.', '...##..', '..##...', '.##....', '#......'],
+  ['..###..', '.#...#.', '#..#..#', '#..##.#', '#.....#', '.#...#.', '..###..'],
+  ['...####...', '.########.', '##..######', '#..#######', '##########', '##########', '.########.', '...####...'],
+  ['.##############.', '################', '.##############.'],
+  ['..####..', '.######.', '##.#####', '#####.##', '###.####', '######.#', '.##.###.', '..####..'],
+  ['..#####..', '.#.....#.', '#...#...#', '#...#...#', '#.#####.#', '#...#...#', '#...#...#', '.#.....#.', '..#####..'],
+  ['#.....#.....', '##....##....', '###...###...', '####..####..', '###...###...', '##....##....', '#.....#.....'],
+  ['....#......', '...##...#..', '..###.#..#.', '#####..#.#.', '#####..#.#.', '#####..#.#.', '..###.#..#.', '...##...#..', '....#......'],
+  ['....###....', '.#.#...#.#.', '#..#...#..#', '#..#...#..#', '#..#...#..#', '.#.#...#.#.', '....###....'],
+  ['###########.', '#.........#.', '#.........##', '#.........##', '#.........##', '#.........#.', '###########.'],
+  ['..#######..', '.#.......#.', '#..#####..#', '..#.....#..', '....###....', '...#...#...', '.....#.....', '.....#.....'],
+  ['...###...', '...###...', '...###...', '#########', '.#######.', '..#####..', '...###...', '....#....', '#########'],
+  ['...#.....', '..##.....', '.########', '#########', '.########', '..##.....', '...#.....'],
+  ['........#', '.......##', '#.....##.', '##...##..', '.##.##...', '..###....', '...#.....'],
+  ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#']
+];
+const icW = (id) => ICONS[id][0].length, icH = (id) => ICONS[id].length;
+const NAMES = ['Delfino', 'Orki', 'Schildi'];
+
+function newEgg(seed) {
+  return { hunger: 80, fun: 80, energy: 80, health: 100, age: 0, seed: (seed >>> 0) || 12345,
+    sleeping: false, dead: false, sick: false, plastic: 0, menu: 0, msgIcon: -1, msgNo: false, msgUntil: 0, anim: 0, animArg: 0, animStart: 0,
+    now: 0, coolUntil: 0, snd: 0, sndStart: 0, species: 0, speed: 0, vol: 2, sens: 2,
+    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0 };
+}
+const clamp = (v) => (v < 0 ? 0 : v > 100 ? 100 : v);
+function rnd(S) { S.seed = (Math.imul(S.seed, 1664525) + 1013904223) >>> 0; return (S.seed >>> 16) % 10000; }
+const A = { NONE: 0, FEED: 1, PLAY: 2, SLEEP: 3, WAKE: 4, FISH: 5, MEDIC: 6, NEW: 7, WAVES: 8, DIZZY: 9, BUBBLES: 10, STARTLE: 11 };
+const SND = { NOPE: 12, ALERT: 13, CLICK: 14 };
+const MELS = [null,
+  [0, 600, 220, 70, 0, 80, 220, 70, 0, 80, 220, 70, -1],
+  [523, 60, 659, 60, 784, 60, 1047, 90, 0, 650, 392, 50, 262, 50, 196, 80, -1],
+  [784, 150, 659, 150, 523, 300, -1],
+  [523, 110, 659, 110, 784, 110, 1047, 240, -1],
+  [0, 450, 1568, 25, 0, 45, 1568, 25, 0, 45, 1568, 25, 0, 45, 1568, 25, 0, 150, 1047, 80, 1319, 140, -1],
+  [0, 480, 1319, 80, 0, 40, 1568, 80, 0, 40, 2093, 160, -1],
+  [523, 100, 659, 100, 784, 100, 1047, 100, 784, 100, 1047, 260, -1],
+  [330, 120, 392, 120, 330, 120, 392, 120, 440, 200, -1],
+  [880, 80, 784, 80, 698, 80, 622, 80, 554, 80, 494, 80, 440, 160, -1],
+  [1200, 40, 0, 60, 1500, 40, 0, 80, 1300, 40, 0, 60, 1700, 40, -1],
+  [1760, 50, 0, 30, 2093, 120, -1],
+  [196, 120, 0, 50, 147, 220, -1],
+  [1760, 70, 0, 70, 1760, 70, -1],
+  [1800, 12, -1]
+];
+function sfx(S, t, id) { S.snd = id; S.sndStart = t; }
+function say(S, t, icon, no = false) { S.msgIcon = icon; S.msgNo = no; S.msgUntil = t + 2500; if (no) sfx(S, t, SND.NOPE); }
+function anim(S, t, a, arg = 0) { S.anim = a; S.animArg = arg; S.animStart = t; S.msgUntil = t + 1200 + 2500; sfx(S, t, a); }
+const hourOf = (e) => Math.floor(e / 3600) % 24;
+function isNight(S) { const hh = hourOf(S.now); return hh >= 22 || hh < 7; }
+
+function step(S) {
+  if (S.dead) return;
+  S.age += 1;
+  const night = isNight(S);
+  if (S.sleeping) { S.energy += 0.15; S.hunger -= 0.02; S.fun -= 0.01; }
+  else { S.hunger -= 0.05; S.fun -= 0.04; S.energy -= night ? 0.06 : 0.02; }
+  S.fun -= 0.01 * S.plastic;
+  if (S.sick) S.fun -= 0.02;
+  S.hunger = clamp(S.hunger); S.fun = clamp(S.fun); S.energy = clamp(S.energy);
+  if (S.sleeping && S.energy >= 100 && !night) S.sleeping = false;
+  if (!S.sleeping && night && S.energy < 40) S.sleeping = true;
+  if (rnd(S) < 40 && S.plastic < 5) S.plastic++;
+  const low = Math.min(S.hunger, S.fun, S.energy);
+  const risk = 2 + 3 * S.plastic + (low < 25 ? 6 : 0);
+  if (rnd(S) < risk && !S.sick) S.sick = true;
+  if (low < 10 || S.sick) S.health -= (low < 10 ? 0.05 : 0) + (S.sick ? 0.04 : 0);
+  else S.health += 0.02;
+  S.health = clamp(S.health);
+  if (S.health <= 0) { S.dead = true; S.sleeping = false; }
+}
+function actFeed(S, t) {
+  if (S.dead) return;
+  if (S.sleeping) { say(S, t, I.MOON); return; }
+  if (S.hunger > 90) { say(S, t, I.FORK, true); return; }
+  S.hunger = clamp(S.hunger + 25); say(S, t, I.HEART); anim(S, t, A.FEED, S.age % 2);
+}
+function actPlay(S, t) {
+  if (S.dead) return;
+  if (S.sleeping) { say(S, t, I.MOON); return; }
+  if (S.sick) { say(S, t, I.PAD, true); return; }
+  if (S.energy < 15) { say(S, t, I.BOLT, true); return; }
+  S.fun = clamp(S.fun + 20); S.energy = clamp(S.energy - 8); S.hunger = clamp(S.hunger - 5); say(S, t, I.HEART); anim(S, t, A.PLAY);
+}
+function actSleep(S, t) {
+  if (S.dead) return;
+  if (S.sleeping) { S.sleeping = false; say(S, t, I.SUN); anim(S, t, A.WAKE); }
+  else { S.sleeping = true; say(S, t, I.MOON); anim(S, t, A.SLEEP); }
+}
+function actFish(S, t) {
+  if (S.dead) return;
+  if (S.plastic === 0) { say(S, t, I.ROD, true); return; }
+  S.plastic--; S.fun = clamp(S.fun + 5); say(S, t, I.HEART); anim(S, t, A.FISH, S.plastic);
+}
+function actMedic(S, t) {
+  if (S.dead) return;
+  if (!S.sick) { say(S, t, I.KIT, true); return; }
+  S.sick = false; S.fun = clamp(S.fun - 5); say(S, t, I.HEART); anim(S, t, A.MEDIC);
+}
+function gShake(S, t, lvl) {
+  if (S.dead || t < S.coolUntil) return;
+  S.coolUntil = t + 6000;
+  if (S.sleeping) { S.sleeping = false; S.fun = clamp(S.fun - 5); say(S, t, -1); anim(S, t, A.STARTLE); return; }
+  if (lvl === 1) { S.fun = clamp(S.fun + 10); say(S, t, I.HEART); anim(S, t, A.WAVES); }
+  else { S.fun = clamp(S.fun - 15); if (rnd(S) < 3333) S.sick = true; say(S, t, -1); anim(S, t, A.DIZZY); }
+}
+function gHear(S, t, kind) {
+  if (S.dead || t < S.coolUntil) return;
+  if (kind === 1) { if (S.sleeping) return; S.coolUntil = t + 6000; S.fun = clamp(S.fun + 8); say(S, t, I.HEART); anim(S, t, A.BUBBLES); }
+  else { S.coolUntil = t + 6000; S.sleeping = false; S.fun = clamp(S.fun - 5); say(S, t, -1); anim(S, t, A.STARTLE); }
+}
+function catchUp(S, target) {
+  if (target <= S.now) return;
+  let n = Math.floor((target - S.now) / 10); if (n > 60480) n = 60480;
+  for (let i = 0; i < n && !S.dead; i++) { S.now += 10; S.sleeping = true; step(S); }
+  S.now = target;
+  if (!S.dead && !isNight(S) && S.energy >= 50) S.sleeping = false;
+}
+function needs(S) { return !S.dead && (S.sick || S.plastic >= 3 || Math.min(S.hunger, S.fun, S.energy) < 25); }
+function newGame(S, t, sp) {
+  const keep = { now: S.now, speed: S.speed, vol: S.vol, sens: S.sens, batt: S.batt, chg: S.chg, wifiOk: S.wifiOk };
+  Object.assign(S, newEgg(S.seed ^ (t | 0)), keep, { species: sp });
+  say(S, t, I.HEART); anim(S, t, A.NEW);
+}
+let SET_ROWS = [0, 1, 2, 3, 4, 5, 6, 7];   // Eintraege im Einstellungsmenue (die Handy-Version laesst Akku, WLAN, Update weg)
+function pressLong(S) { if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2) S.ui = 0; else S.ui = 1; }
+function pressNext(S) {
+  if (S.ui === 1) S.uiSel = (S.uiSel + 1) % SET_ROWS.length;
+  else if (S.ui === 2) S.uiSel = (S.uiSel + 1) % 4;
+  else if (S.ui === 0 && !S.dead) S.menu = (S.menu + 1) % 5;
+}
+function pressOk(S, t) {
+  if (S.ui === 1) {
+    const it = SET_ROWS[S.uiSel];
+    if (it === 0) { S.ui = 2; S.uiSel = S.species; }
+    else if (it === 1) S.speed = (S.speed + 1) % 3;
+    else if (it === 2) S.vol = (S.vol + 1) % 4;
+    else if (it === 3) S.sens = (S.sens + 1) % 4;
+    else if (it === 5) { S.ui = 3; S.req = 1; S.netState = 0; }
+    else if (it === 6) { S.ui = 4; S.req = 2; S.netState = 1; S.netPct = 0; S.netErr = 0; }
+    else if (it === 7) S.ui = 0;
+    return;
+  }
+  if (S.ui === 2) { if (S.uiSel === 3) { S.ui = 1; S.uiSel = 0; } else { newGame(S, t, S.uiSel); S.ui = 0; } return; }
+  if (S.ui >= 3) { S.ui = 1; return; }
+  if (S.dead) { newGame(S, t, S.species); return; }
+  if (S.menu === 0) actFeed(S, t); else if (S.menu === 1) actPlay(S, t); else if (S.menu === 2) actSleep(S, t);
+  else if (S.menu === 3) actFish(S, t); else actMedic(S, t);
+}
+const M = { DEAD: 0, SLEEP: 1, SICK: 2, SAD: 3, HAPPY: 4, OK: 5 };
+function mood(S) {
+  if (S.dead) return M.DEAD;
+  if (S.sleeping) return M.SLEEP;
+  if (S.sick) return M.SICK;
+  const low = Math.min(S.hunger, S.fun, S.energy), avg = (S.hunger + S.fun + S.energy) / 3;
+  if (low < 25) return M.SAD;
+  return avg >= 60 ? M.HAPPY : M.OK;
+}
+
+// ================= Zeichnen (135 x 240, hochkant) =================
+const tw = (s, size) => 6 * size * s.length;
+const dv = (a, b) => Math.trunc(a / b);
+const W = 135, H = 240, WTOP = 23, DCX = 68, DCY = 112, INFX = 67, INFY = 180, CORNX = 132, NAMEY = 194, AGEY = 176, MENUY = 214, FOODX = 112, FOODY = 30;
+const PL = [[4, 30], [118, 32], [6, 140], [120, 146], [8, 196]];
+const ST = [[20, 40], [60, 40], [100, 152], [30, 176]];
+const CIR = [[0, -10], [7, -7], [10, 0], [7, 7], [0, 10], [-7, 7], [-10, 0], [-7, -7]];
+const SPC = [
+  { ex: 10, ey: -6, mx: 22, my: 2, ml: 10, chx: 12, chy: 0, nx: 34, ny: 2, bx: 24, by: -2, hx: 6, hy: -24 },
+  { ex: 12, ey: -7, mx: 16, my: 4, ml: 10, chx: 21, chy: -1, nx: 29, ny: 3, bx: 10, by: -14, hx: 2, hy: -16 },
+  { ex: 28, ey: -6, mx: 30, my: 0, ml: 5, chx: 23, chy: -3, nx: 37, ny: -2, bx: 24, by: -8, hx: 36, hy: -6 }];
+
+function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/text)
+  const R = (x, y, w, h, c) => { if (w > 0 && h > 0) g.rect(x, y, w, h, c); };
+  const T = (s, x, y, size, c) => g.text(s, x, y, size, c);
+  const iconK = (id, x, y, kn, kd, c) => {
+    const rows = ICONS[id];
+    for (let r = 0; r < rows.length; r++) for (let k = 0; k < rows[r].length; k++)
+      if (rows[r][k] === '#') { const x0 = dv(k * kn, kd), y0 = dv(r * kn, kd); R(x + x0, y + y0, dv((k + 1) * kn, kd) - x0, dv((r + 1) * kn, kd) - y0, c); }
+  };
+  const icon = (id, x, y, s, c) => iconK(id, x, y, s, 1, c);
+  const kW = (id, kn, kd) => dv(icW(id) * kn, kd), kH = (id, kn, kd) => dv(icH(id) * kn, kd);
+  const iconNo = (id, x, y, s) => { const w = icW(id), hh = icH(id); for (let i = 0; i < w; i++) R(x + i * s, y + dv(i * hh, w) * s, s + 1, s + 1, C.LOW); };
+  let gkn = 5, gkd = 4, gcx = 0, gcy = 0;
+  const sc = (v) => Math.floor(v * gkn / gkd);
+  const SR = (dx, dy, w, h, c) => { const x0 = sc(dx), y0 = sc(dy); R(gcx + x0, gcy + y0, sc(dx + w) - x0, sc(dy + h) - y0, c); };
+  const drawPlastic = (i, x, y) => {
+    if (i % 2 === 0) { R(x + 1, y, 4, 2, C.CAP); R(x, y + 2, 6, 11, C.PLA); R(x, y + 6, 6, 2, C.CAP); }
+    else { R(x, y, 10, 2, C.BAG); R(x + 1, y + 2, 8, 5, C.BAG); R(x, y + 7, 3, 3, C.BAG); R(x + 7, y + 7, 3, 3, C.BAG); }
+  };
+  function drawPet(S, sp, cx, cy, mo, sk, dead, t, an, ap, full) {
+    gcx = cx; gcy = cy;
+    const P = SPC[sp];
+    let mc = C.EYE, eb;
+    if (sp === 2) {
+      const shell = dead ? C.DEAD : (sk ? C.SHELLSICK : C.SHELL), skin = dead ? C.DEADFIN : (sk ? C.SKINSICK : C.SKIN), dk = dead ? C.DEADFIN : C.SHELLD;
+      SR(10, 4, 10, 5, skin); SR(14, 9, 9, 4, skin); SR(-34, 4, 10, 5, skin); SR(-39, 9, 9, 4, skin); SR(-46, -2, 10, 4, skin);
+      SR(16, -5, 8, 7, skin); SR(22, -8, 14, 10, skin); SR(24, -10, 10, 2, skin);
+      SR(-26, -22, 36, 4, shell); SR(-32, -18, 48, 4, shell); SR(-36, -14, 56, 8, shell); SR(-38, -6, 60, 8, shell);
+      SR(-36, 2, 56, 4, dead ? C.DEADFIN : C.TBELLY);
+      SR(-22, -16, 10, 6, dk); SR(-6, -18, 12, 6, dk); SR(10, -14, 8, 6, dk); SR(-30, -6, 10, 6, dk); SR(-14, -6, 12, 6, dk); SR(4, -6, 10, 6, dk);
+      eb = skin;
+    } else if (sp === 1) {
+      const blk = dead ? C.DEADFIN : (sk ? C.ORCASICK : C.ORCA), wht = C.ORCAB;
+      SR(-40, -4, 14, 8, blk); SR(-46, -6, 6, 12, blk); SR(-52, -12, 8, 8, blk); SR(-52, 4, 8, 8, blk);
+      SR(-10, -18, 10, 4, blk); SR(-9, -22, 8, 4, blk); SR(-8, -26, 6, 4, blk); SR(-7, -30, 5, 4, blk); SR(-6, -34, 4, 4, blk); SR(-5, -38, 2, 4, blk);
+      SR(-30, -14, 48, 4, blk); SR(-34, -10, 56, 4, blk); SR(-36, -6, 64, 12, blk); SR(-34, 6, 58, 4, blk); SR(-26, 10, 44, 4, blk);
+      SR(-22, -14, 12, 2, C.SADDLE);
+      SR(-28, 6, 52, 4, wht); SR(-20, 10, 36, 4, wht); SR(14, 4, 12, 2, wht); SR(-24, 0, 12, 6, wht);
+      SR(7, -11, 11, 2, wht); SR(5, -9, 15, 7, wht);
+      SR(-2, 8, 10, 5, blk); SR(0, 13, 9, 4, blk);
+      eb = wht;
+    } else {
+      const body = dead ? C.DEAD : (sk ? C.SICK : C.BODY), fin = dead ? C.DEADFIN : (sk ? C.SICKFIN : C.FIN);
+      SR(-44, -3, 14, 6, body); SR(-48, -4, 4, 8, fin); SR(-54, -12, 6, 8, fin); SR(-54, 4, 6, 8, fin);
+      SR(-6, -22, 10, 4, fin); SR(-10, -26, 7, 4, fin); SR(-13, -30, 4, 4, fin);
+      SR(-12, -18, 24, 4, body); SR(-22, -14, 40, 4, body); SR(-30, -10, 50, 4, body); SR(-34, -6, 58, 12, body);
+      SR(-30, 6, 50, 4, body); SR(-22, 10, 34, 4, body); SR(24, -2, 9, 7, body);
+      SR(-28, 6, 46, 4, C.BELLY); SR(-20, 10, 30, 2, C.BELLY); SR(22, 3, 11, 2, C.BELLY);
+      SR(-6, 8, 8, 4, fin); SR(-8, 12, 6, 4, fin);
+      eb = body;
+    }
+    const ex = P.ex, ey = P.ey, mx = P.mx, my = P.my, ml = P.ml;
+    const blink = (t % 3200) < 140;
+    if (mo === M.DEAD) { for (let i = 0; i < 6; i += 2) { SR(ex - 1 + i, ey - 1 + i, 2, 2, C.EYE); SR(ex + 3 - i, ey - 1 + i, 2, 2, C.EYE); } }
+    else if (an === A.DIZZY) { SR(ex - 1, ey - 1, 6, 6, C.EYE); SR(ex, ey, 4, 4, eb); SR(ex + 1, ey + 1, 2, 2, C.EYE); }
+    else if (an === A.STARTLE) { SR(ex - 1, ey - 2, 6, 7, C.EYE); SR(ex, ey - 1, 2, 2, C.WHITE); }
+    else if (mo === M.SLEEP || blink) SR(ex - 1, ey + 2, 6, 2, C.EYE);
+    else { SR(ex, ey, 4, 5, C.EYE); SR(ex + 1, ey + 1, 1, 1, C.WHITE); }
+    if (mo === M.SAD && !blink && an === A.NONE) SR(ex + 1, ey + 6, 2, 3, C.BUBBLE);
+    if (an === A.FEED && ap >= 600) { if (dv(ap, 150) % 2 === 0) SR(mx + 2, my - 1, ml - 1, 3, mc); else SR(mx, my, ml, 1, mc); }
+    else if (an === A.STARTLE) SR(mx + 3, my - 1, ml < 5 ? ml : 5, 3, mc);
+    else if (mo === M.HAPPY) { SR(mx, my, ml, 1, mc); SR(mx - 2, my - 1, 2, 1, mc); SR(P.chx, P.chy, 5, 2, C.CHEEK); }
+    else if (mo === M.OK) SR(mx, my, ml, 1, mc);
+    else if (mo === M.SAD) { SR(mx, my, ml, 1, mc); SR(mx - 2, my + 1, 2, 1, mc); }
+    else if (mo === M.SICK) { SR(mx, my + 1, dv(ml, 2), 1, mc); SR(mx + dv(ml, 2), my, ml - dv(ml, 2), 1, mc); }
+    else if (mo === M.SLEEP) SR(mx, my, ml - 2, 1, mc);
+    else SR(mx, my + 1, ml, 1, mc);
+    if (!full) return;
+    if (sk) { SR(-46, -30, 2, 8, C.LOW); SR(-49, -27, 8, 2, C.LOW); }
+    if (!S.sleeping && !dead) { const p = Math.floor(t / 50) % 40; if (p < 12) R(cx + sc(P.hx) + ((p >> 2) % 2), cy + sc(P.hy) - p, 2, 2, C.BUBBLE); }
+    if (mo === M.SLEEP && an !== A.SLEEP) { const z = (Math.floor(t / 700) % 2) === 1; T(z ? 'Z' : 'z', cx + sc(34), cy + sc(-30) + (z ? 0 : 4), 2, C.TXT); }
+  }
+  function drawHeader(S) {
+    const vals = [S.hunger, S.fun, S.energy], labs = [I.FORK, I.PAD, I.BOLT], lcol = [C.FOOD, C.PLAY, C.SEL];
+    for (let i = 0; i < 3; i++) {
+      const x0 = 2 + i * 44, id = labs[i];
+      iconK(id, x0 + dv(18 - kW(id, 3, 2), 2), 2 + dv(14 - kH(id, 3, 2), 2), 3, 2, lcol[i]);
+      R(x0 + 20, 5, 22, 8, C.PANEL);
+      const w = Math.floor(vals[i] * 0.20 + 0.5);
+      if (w > 0) R(x0 + 21, 6, w, 6, vals[i] < 25 ? C.LOW : C.OK);
+    }
+    const hw = Math.floor(S.health * 1.31 + 0.5);
+    R(2, 19, 131, 2, C.PANEL);
+    if (hw > 0) R(2, 19, hw, 2, S.health < 30 ? C.LOW : C.OK);
+  }
+  function drawMenu(S, an, sk) {
+    if (S.dead) { const x = dv(W - 44, 2); R(x, MENUY, 44, 22, C.SEL); iconK(I.HEART, x + dv(44 - kW(I.HEART, 3, 2), 2), MENUY + dv(22 - kH(I.HEART, 3, 2), 2), 3, 2, C.BG); return; }
+    const ids = [I.FORK, I.PAD, S.sleeping ? I.SUN : I.MOON, I.ROD, I.KIT], cols = [C.FOOD, C.PLAY, C.SEL, C.OK, C.CHEEK];
+    for (let i = 0; i < 5; i++) {
+      const x = 1 + i * 27, id = ids[i], sel = S.menu === i;
+      const warn = (i === 3 && S.plastic + (an === A.FISH ? 1 : 0) >= 3) || (i === 4 && sk);
+      R(x, MENUY, 26, 22, sel ? C.SEL : C.PANEL);
+      iconK(id, x + dv(26 - kW(id, 3, 2), 2), MENUY + dv(22 - kH(id, 3, 2), 2), 3, 2, sel ? C.BG : cols[i]);
+      if (warn) { R(x + 19, MENUY, 7, 7, C.BG); R(x + 20, MENUY + 1, 5, 5, C.LOW); }
+    }
+  }
+  function drawGame(S, t) {
+    let mo = mood(S);
+    const bg = S.sleeping ? C.BGS : (isNight(S) ? C.BGN : C.BG);
+    R(0, 0, W, H, bg);
+    drawHeader(S);
+    for (let i = 0; i < S.plastic; i++) drawPlastic(i, PL[i][0], PL[i][1] + ((Math.floor(t / 600) + i) % 2));
+    const ap = Math.floor(t - S.animStart), an = (S.anim && ap >= 0 && ap < 1200) ? S.anim : A.NONE;
+    if (an === A.FISH) {
+      const i = S.animArg, sx = PL[i][0], sy = PL[i][1], d = sy - 4 - WTOP;
+      const ly = ap < 500 ? WTOP + dv(d * ap, 500) : sy - 4 - dv(d * (ap - 500), 700);
+      R(sx + 4, WTOP, 1, ly - WTOP + 3, C.TXT); R(sx + 1, ly + 3, 4, 1, C.TXT); R(sx + 1, ly + 1, 1, 2, C.TXT);
+      drawPlastic(i, sx, ap < 500 ? sy : ly + 4);
+    } else if (an === A.WAVES) {
+      for (let r = 0; r < 2; r++) for (let k = 0; k < 16; k++) R((k * 16 + dv(ap, 20)) % 256 - 16, 40 + r * 110 + ((k + r) % 2) * 2, 8, 2, C.BUBBLE);
+    } else if (an === A.BUBBLES) {
+      for (let i = 0; i < 6; i++) { const y = 140 - (dv(ap, 6) + i * 23) % 100, x = 6 + i * 7 + ((dv(ap, 100) + i) % 2) * 2; R(x, y, 5, 5, C.BUBBLE); R(x + 1, y + 1, 3, 3, bg); }
+    }
+    let jy = 0, dx = 0;
+    if (an === A.PLAY) jy = -dv(ap * (1200 - ap), 24000);
+    else if (an === A.WAKE) jy = -dv(ap * (1200 - ap), 60000);
+    else if (an === A.WAVES) jy = -((dv(ap, 150) % 2) * 3);
+    else if (an === A.STARTLE) jy = ap < 200 ? -dv(ap, 20) : (ap < 600 ? -10 : -dv(1200 - ap, 60));
+    if (an === A.DIZZY) dx = (dv(ap, 60) % 2) * 4 - 2;
+    else if (an === A.BUBBLES) dx = -(ap < 600 ? dv(ap, 50) : dv(1200 - ap, 50));
+    gkn = 5; gkd = 4;
+    const cx = DCX + dx, bob = (!S.sleeping && !S.dead && (Math.floor(t / 500) % 2) === 1) ? 2 : 0, cy = DCY + bob + jy;
+    const pend = an === A.MEDIC && ap < 500;
+    if (pend && mo !== M.SLEEP) mo = M.SICK;
+    const sk = (S.sick || pend) && !S.dead;
+    drawPet(S, S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
+    const P = SPC[S.species];
+    if (an === A.FEED) {
+      if (ap < 600) {
+        const f = S.animArg ? I.COOKIE : I.WIENER, tx = cx + sc(P.nx), ty = cy + sc(P.ny) - dv(kH(f, 3, 2), 2);
+        iconK(f, FOODX + dv((tx - FOODX) * ap, 600), FOODY + dv((ty - FOODY) * ap, 600), 3, 2, S.animArg ? C.COOKIE : C.WIENER);
+      }
+    } else if (an === A.PLAY) {
+      const bb = dv((ap % 400) * (400 - ap % 400), 4000);
+      iconK(I.BALL, cx + sc(P.bx) - 2, cy + sc(P.by) - kH(I.BALL, 3, 2) - bb, 3, 2, C.LOW);
+      if (ap > 900) { const sp = dv(ap - 900, 15); for (let i = 0; i < 5; i++) R(cx + sc(-34) + i * 20, cy + sc(16) + 6 - sp - (i % 2) * 4, 3, 3, C.BUBBLE); }
+    } else if (an === A.SLEEP) {
+      const my = cy + sc(-30);
+      iconK(I.MOON, cx + sc(20), ap < 600 ? -16 + dv((my + 16) * ap, 600) : my, 3, 2, C.SEL);
+      for (let i = 0; i < 4; i++) if ((dv(ap, 200) + i) % 2 === 0) { R(ST[i][0] - 2, ST[i][1], 5, 1, C.SEL); R(ST[i][0], ST[i][1] - 2, 1, 5, C.SEL); }
+    } else if (an === A.WAKE) {
+      iconK(I.SUN, cx + sc(26), cy + sc(-16) - dv(20 * ap, 1200), 3, 2, C.SEL);
+    } else if (an === A.MEDIC) {
+      if (ap < 500) { const px = cx + sc(P.bx + 2), pe = cy + sc(P.by - 4) - 5, py = WTOP + dv((pe - WTOP) * ap, 500); R(px, py, 5, 5, C.LOW); R(px + 5, py, 5, 5, C.TXT); }
+      else for (let i = 0; i < 4; i++) { const x = cx + sc(-40 + i * 26), y = cy + sc(-12) - dv(ap - 500, 30) - (i % 2) * 8; R(x - 2, y, 5, 1, C.OK); R(x, y - 2, 1, 5, C.OK); }
+    } else if (an === A.NEW) {
+      for (let i = 0; i < 3; i++) iconK(I.HEART, cx + sc(-34 + i * 30), cy + sc(-30) - dv(ap, 40) + (i % 2) * 6, 3, 2, C.CHEEK);
+    } else if (an === A.DIZZY) {
+      for (let i = 0; i < 3; i++) { const k = (dv(ap, 100) + i * 3) % 8, x = cx + sc(P.ex - 6) + CIR[k][0] * 2, y = cy + sc(-30) - 6 + dv(CIR[k][1], 2); R(x - 2, y, 5, 1, C.SEL); R(x, y - 2, 1, 5, C.SEL); }
+    } else if (an === A.STARTLE) {
+      const x = cx + sc(P.nx + 2), y = cy + sc(-20); R(x, y, 3, 10, C.LOW); R(x, y + 12, 3, 3, C.LOW);
+    }
+    if (an === A.NONE && t < S.msgUntil && S.msgIcon >= 0) {
+      const id = S.msgIcon, x = INFX - icW(id), y = INFY - icH(id);
+      icon(id, x, y, 2, C.TXT);
+      if (S.msgNo) iconNo(id, x, y, 2);
+    }
+    const name = NAMES[S.species], nw = tw(name, 2) + 4;
+    R(CORNX - nw + 1, NAMEY, nw - 2, 18, C.SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C.SEL);
+    T(name, CORNX - nw + 3, NAMEY + 2, 2, C.BG);
+    let ax = CORNX;
+    if (!S.dead) {
+      const buf = String(Math.floor(S.age / 60)), cw = kW(I.CLOCK, 3, 2);
+      ax = CORNX - tw(buf, 2) - cw - 2;
+      iconK(I.CLOCK, ax, AGEY + 3, 3, 2, C.DIM); T(buf, ax + cw + 3, AGEY, 2, C.DIM);
+    }
+    if (needs(S) && !S.sleeping && (t % 1000) < 500) R(ax - 9, AGEY + 5, 6, 6, C.LOW);
+    drawMenu(S, an, sk);
+  }
+  const drawBars = (x, y, n, on, off) => { for (let i = 0; i < 3; i++) R(x + i * 7, y + 12 - i * 4, 5, 4 + i * 4, i < n ? on : off); };
+  const backRow = (y, sel, h = 26) => { R(3, y, 129, h, sel ? C.SEL : C.PANEL); iconK(I.BACK, INFX - dv(kW(I.BACK, 3, 2), 2), y + dv(h - kH(I.BACK, 3, 2), 2), 3, 2, sel ? C.BG : C.TXT); };
+  function drawSettings(S, t) {
+    R(0, 0, W, H, C.BGS);
+    const ids = [I.NEWG, I.FAST, I.SPK, I.WAVE, I.BATT, I.WIFI, I.DL, I.BACK];
+    for (let row = 0; row < SET_ROWS.length; row++) {
+      const r = SET_ROWS[row], y = 4 + row * 27, sel = S.uiSel === row, fg = sel ? C.BG : C.TXT;
+      if (r === 7) { backRow(y, sel, 24); continue; }
+      R(3, y, 129, 24, sel ? C.SEL : C.PANEL);
+      iconK(ids[r], 8 + dv(20 - kW(ids[r], 3, 2), 2), y + dv(24 - kH(ids[r], 3, 2), 2), 3, 2, fg);
+      if (r === 0) { gkn = 1; gkd = 4; drawPet(S, S.species, 104, y + 14, M.HAPPY, false, false, t, A.NONE, 0, false); }
+      else if (r === 1) { const v = S.speed === 0 ? '1x' : (S.speed === 1 ? '10x' : '50x'); T(v, 128 - tw(v, 2), y + 4, 2, fg); }
+      else if (r === 2 || r === 3) { const n = r === 2 ? S.vol : S.sens; if (n === 0) iconK(I.CROSSX, 110, y + 7, 3, 2, sel ? C.BG : C.LOW); else drawBars(105, y + 5, n, fg, sel ? C.FIN : C.DIM); }
+      else if (r === 4) {
+        const b = S.batt < 0 ? '--' : S.batt + '%', x = 128 - tw(b, 2); T(b, x, y + 4, 2, fg);
+        if (S.chg) iconK(I.BOLT, x - 13, y + 6, 3, 2, sel ? C.BG : C.SEL);
+      }
+      else if (r === 5) iconK(S.wifiOk ? I.CHECK : I.CROSSX, 112, y + 7, 3, 2, sel ? C.BG : (S.wifiOk ? C.OK : C.LOW));
+      else if (r === 6) { const b = 'v' + FW_VERSION; T(b, 128 - tw(b, 2), y + 4, 2, fg); }
+    }
+    const cr = '(c) 2026 Daniel Lassak';
+    T(cr, dv(W - tw(cr, 1), 2) + 1, 228, 1, C.DIM);
+  }
+  function drawPicker(S, t) {
+    R(0, 0, W, H, C.BGS);
+    for (let r = 0; r < 3; r++) {
+      const y = 6 + r * 56, sel = S.uiSel === r;
+      R(3, y, 129, 52, sel ? C.SEL : C.PANEL);
+      gkn = 1; gkd = 2; drawPet(S, r, INFX, y + 22, M.HAPPY, false, false, t, A.NONE, 0, false);
+      T(NAMES[r], INFX - dv(tw(NAMES[r], 1), 2), y + 41, 1, sel ? C.BG : C.TXT);
+    }
+    backRow(6 + 3 * 56, S.uiSel === 3);
+  }
+  function drawWifi(S, t) {
+    R(0, 0, W, H, C.BGS);
+    iconK(I.WIFI, INFX - dv(kW(I.WIFI, 2, 1), 2), 10, 2, 1, C.TXT);
+    const lines = ['Am iPhone ins WLAN', 'Delfino-Setup gehen.', '', 'Die Seite oeffnet', 'sich von selbst,', 'sonst in Safari:', '192.168.4.1', '', 'Dort dein WLAN', 'eintragen.'];
+    for (let i = 0; i < 10; i++) T(lines[i], 6, 40 + i * 12, 1, (i === 1 || i === 6) ? C.SEL : C.TXT);
+    if (S.netState === 3) iconK(I.CHECK, INFX - dv(kW(I.CHECK, 2, 1), 2), 170, 2, 1, C.OK);
+    backRow(210, true);
+  }
+  function drawUpdate(S, t) {
+    R(0, 0, W, H, C.BGS);
+    iconK(I.DL, INFX - dv(kW(I.DL, 2, 1), 2), 12, 2, 1, C.TXT);
+    let msg = '', ic = -1, icc = C.OK;
+    if (S.netState === 1) msg = 'Verbinde ...';
+    else if (S.netState === 2) msg = 'Lade Update';
+    else if (S.netState === 5) { msg = 'Schon aktuell'; ic = I.CHECK; }
+    else if (S.netState === 6) { msg = 'Fertig, Neustart'; ic = I.CHECK; }
+    else if (S.netState === 4) {
+      msg = S.netErr === 1 ? 'Erst WLAN einrichten' : (S.netErr === 2 ? 'WLAN nicht gefunden' : (S.netErr === 3 ? 'Kein Update gefunden' : 'Update fehlgeschlagen'));
+      ic = I.CROSSX; icc = C.LOW;
+    }
+    T(msg, INFX - dv(tw(msg, 1), 2), 50, 1, C.TXT);
+    if (S.netState === 2) { R(10, 70, 115, 10, C.PANEL); R(11, 71, dv(113 * S.netPct, 100), 8, C.OK); }
+    if (ic >= 0) iconK(ic, INFX - dv(kW(ic, 2, 1), 2), 92, 2, 1, icc);
+    if (S.netState !== 1 && S.netState !== 2 && S.netState !== 6) backRow(210, true);
+  }
+  return function drawScene(S, t) {
+    if (S.ui === 1) drawSettings(S, t);
+    else if (S.ui === 2) drawPicker(S, t);
+    else if (S.ui === 3) drawWifi(S, t);
+    else if (S.ui === 4) drawUpdate(S, t);
+    else drawGame(S, t);
+  };
+}
+// ===== ENDE CORE =====
+
+SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, zurueck
+(function () {
+  const cv = document.getElementById('lcd'), ctx = cv.getContext('2d'), SC = 4;
+  ctx.setTransform(SC, 0, 0, SC, 0, 0); ctx.textBaseline = 'top'; ctx.imageSmoothingEnabled = false;
+  const cache = {};
+  const css = (c) => cache[c] || (cache[c] = (() => {
+    const r5 = (c >> 11) & 31, g6 = (c >> 5) & 63, b5 = c & 31;
+    return 'rgb(' + ((r5 << 3) | (r5 >> 2)) + ',' + ((g6 << 2) | (g6 >> 4)) + ',' + ((b5 << 3) | (b5 >> 2)) + ')';
+  })());
+  const g = {
+    rect: (x, y, w, h, c) => { ctx.fillStyle = css(c); ctx.fillRect(x, y, w, h); },
+    text: (s, x, y, size, c) => {
+      ctx.fillStyle = css(c); ctx.font = '700 ' + (10 * size) + 'px ui-monospace, Menlo, "DejaVu Sans Mono", monospace';
+      for (let i = 0; i < s.length; i++) ctx.fillText(s[i], x + i * 6 * size, y - size * 0.5);
+    }
+  };
+  const drawScene = makeDraw(g);
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'delfino-web';
+  const SPEEDF = [1, 10, 50];
+  const clockNow = () => Math.floor(Date.now() / 1000) - new Date().getTimezoneOffset() * 60;
+  let S = newEgg((Math.random() * 4294967296) >>> 0);
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const o = JSON.parse(raw); if (o && typeof o.hunger === 'number') S = Object.assign(S, o, { msgIcon: -1, msgUntil: 0, anim: 0, snd: 0, coolUntil: 0, ui: 0, req: 0 }); }
+  } catch (e) {}
+  // Zeit, in der die Seite zu war, nachholen (das Tier hat geschlafen, 10x langsamer)
+  const resume = () => {
+    if (!S.now) S.now = clockNow();
+    if (S.lastSeen) { const el = (Date.now() - S.lastSeen) / 1000; if (el > 2) catchUp(S, S.now + Math.floor(el * SPEEDF[S.speed])); }
+    S.lastSeen = Date.now();
+  };
+  resume();
+  const save = () => { S.lastSeen = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+  document.addEventListener('visibilitychange', () => { if (document.hidden) save(); else { resume(); last = performance.now(); } });
+  window.addEventListener('pagehide', save);
+
+  // Ton
+  let actx = null;
+  const audio = () => { if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (actx && actx.state === 'suspended') actx.resume(); return actx; };
+  const GAIN = [0, 0.015, 0.035, 0.07];
+  function tone(f, ms) {
+    const a = audio(); if (!a || !S.vol) return;
+    const o = a.createOscillator(), gn = a.createGain();
+    o.type = 'square'; o.frequency.value = f; gn.gain.value = GAIN[S.vol]; o.connect(gn); gn.connect(a.destination);
+    o.start(); o.stop(a.currentTime + ms / 1000);
+  }
+  let playId = -1, playIdx = -1, playStart = 0, lastAlert = performance.now();
+
+  // Schuetteln ueber den Bewegungssensor (gleiche Schwellen wie am Stick)
+  const SOFT = [0, 1.2, 0.9, 0.7], WILD = [0, 2.4, 1.8, 1.4];
+  let motionOn = false, shSum = 0, shN = 0, shWin = performance.now();
+  function onMotion(e) {
+    const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
+    shSum += Math.abs(Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z) / 9.81 - 1); shN++;
+  }
+  async function enableMotion() {
+    if (motionOn) return;
+    try {
+      if (typeof DeviceMotionEvent === 'undefined') { $('motion').textContent = 'Schütteln geht hier nicht'; return; }
+      if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        const r = await DeviceMotionEvent.requestPermission();
+        if (r !== 'granted') { $('motion').textContent = 'Schütteln nicht erlaubt'; return; }
+      }
+      window.addEventListener('devicemotion', onMotion); motionOn = true;
+      $('motion').textContent = 'Schütteln an'; $('motion').classList.add('on');
+    } catch (e) { $('motion').textContent = 'Schütteln einschalten'; }
+  }
+  $('motion').addEventListener('click', () => { audio(); enableMotion(); });
+
+  // Tasten: A = ausfuehren, B = weiter, B lang = Menue
+  const now = () => performance.now();
+  const after = () => { if (!S.snd) sfx(S, now(), SND.CLICK); save(); };
+  const doNext = () => { audio(); pressNext(S); after(); };
+  const doOk = () => { audio(); pressOk(S, now()); after(); };
+  const doLong = () => { audio(); pressLong(S); after(); };
+  const press = (el, on) => el.classList.toggle('down', on);
+  let held = false, holdTimer = 0;
+  $('b').addEventListener('pointerdown', () => { press($('b'), true); held = false; clearTimeout(holdTimer); holdTimer = setTimeout(() => { held = true; doLong(); }, 600); });
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) $('b').addEventListener(ev, () => { press($('b'), false); clearTimeout(holdTimer); });
+  $('b').addEventListener('click', () => { if (held) { held = false; return; } doNext(); });
+  $('a').addEventListener('pointerdown', () => press($('a'), true));
+  for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) $('a').addEventListener(ev, () => press($('a'), false));
+  $('a').addEventListener('click', doOk);
+  $('blow').addEventListener('click', () => { audio(); if (S.ui === 0 && S.sens > 0) { gHear(S, now(), 1); save(); } });
+  document.addEventListener('keydown', (e) => {
+    const k = e.key.toLowerCase();
+    if (k === 'a' || k === 'enter') { e.preventDefault(); doOk(); }
+    else if (k === 'b' || k === 'arrowright') { e.preventDefault(); doNext(); }
+    else if (k === 'm') { e.preventDefault(); doLong(); }
+  });
+  if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) $('hint').hidden = true;
+
+  let last = performance.now(), acc = 0, lastSave = 0;
+  function frame(t) {
+    const dt = Math.min(0.25, (t - last) / 1000); last = t;
+    acc += dt * SPEEDF[S.speed]; let n = 0; while (acc >= 1 && n < 5000) { step(S); S.now += 1; acc -= 1; n++; }
+    if (motionOn && t - shWin >= 1000) {
+      if (shN && S.ui === 0 && S.sens > 0) { const avg = shSum / shN; if (avg > WILD[S.sens]) gShake(S, t, 2); else if (avg > SOFT[S.sens]) gShake(S, t, 1); }
+      shSum = 0; shN = 0; shWin = t;
+    }
+    if (needs(S) && !S.sleeping && S.ui === 0 && t - lastAlert >= 60000) { sfx(S, t, SND.ALERT); lastAlert = t; }
+    if (S.snd) { playId = S.vol ? S.snd : -1; playStart = S.sndStart; playIdx = -1; S.snd = 0; if (playId >= 0 && !MELS[playId]) playId = -1; }
+    if (playId >= 0) {
+      const m = MELS[playId], e = t - playStart; let am = 0, i = 0;
+      while (m[i] >= 0 && e >= am + m[i + 1]) { am += m[i + 1]; i += 2; }
+      if (m[i] < 0) playId = -1; else if (i !== playIdx) { playIdx = i; if (m[i] > 0) tone(m[i], m[i + 1]); }
+    }
+    drawScene(S, t);
+    if (t - lastSave > 5000) { save(); lastSave = t; }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

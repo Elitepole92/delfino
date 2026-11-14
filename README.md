@@ -22,3 +22,11 @@ Medizin geben. Schuetteln macht Wellen, Pusten macht Blubberblasen.
 
 Das Repo muss **oeffentlich** sein, damit der Stick die Releases ohne Passwort laden kann.
 Im Code stehen keine Zugangsdaten; das WLAN-Passwort liegt nur auf dem Stick.
+
+## Spielen auf dem iPhone (ohne Stick)
+
+Unter `docs/` liegt eine Handy-Version mit denselben Tieren und derselben Logik.
+Sie laeuft ueber GitHub Pages: https://elitepole92.github.io/delfino/
+Schuetteln geht ueber den Bewegungssensor des iPhones (einmal "Schuetteln einschalten"
+antippen und erlauben). In Safari ueber Teilen -> "Zum Home-Bildschirm" wird sie zur App.
+Der Spielstand liegt nur im Browser des jeweiligen Handys.
