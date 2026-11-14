@@ -132,7 +132,7 @@ function newEgg(seed) {
   return { hunger: 80, fun: 80, energy: 80, health: 100, age: 0, seed: (seed >>> 0) || 12345,
     sleeping: false, dead: false, sick: false, plastic: 0, menu: 0, msgIcon: -1, msgNo: false, msgUntil: 0, anim: 0, animArg: 0, animStart: 0,
     now: 0, coolUntil: 0, snd: 0, sndStart: 0, species: 0, speed: 0, vol: 2, sens: 2,
-    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0 };
+    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0, ballUsed: 0 };
 }
 const clamp = (v) => (v < 0 ? 0 : v > 100 ? 100 : v);
 function rnd(S) { S.seed = (Math.imul(S.seed, 1664525) + 1013904223) >>> 0; return (S.seed >>> 16) % 10000; }
@@ -251,7 +251,12 @@ const ANSWERS = [
 ];
 function gBall(S, t) {
   if (S.ui !== 5 || (S.ballAns >= 0 && t < S.ballAt + 4000)) return;
-  let a = rnd(S) % 18; if (a === S.ballAns) a = (a + 1) % 18;
+  const NA = 18;
+  if (S.ballUsed === (1 << NA) - 1) S.ballUsed = S.ballAns >= 0 ? (1 << S.ballAns) : 0;
+  let left = 0; for (let i = 0; i < NA; i++) if (!((S.ballUsed >> i) & 1)) left++;
+  let k = rnd(S) % left, a = 0;
+  for (let i = 0; i < NA; i++) if (!((S.ballUsed >> i) & 1)) { if (k === 0) { a = i; break; } k--; }
+  S.ballUsed |= 1 << a;
   S.ballAns = a; S.ballAt = t; sfx(S, t, A.DIZZY);
 }
 function pressLong(S) { if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui === 5) S.ui = 0; else S.ui = 1; }

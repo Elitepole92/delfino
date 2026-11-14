@@ -53,6 +53,7 @@ struct Tama {
   int batt; bool chg, wifiOk;   // vom Stick gemeldet
   int netState, netPct, netErr; // Fortschritt WLAN/Update
   int ballAns; int32_t ballAt;  // Orakel: Antwort (-1 = noch keine) und Zeitpunkt des Schuettelns
+  uint32_t ballUsed;            // Orakel: schon gegebene Antworten (je ein Bit)
 };
 static Tama S;
 static M5Canvas cv(&M5.Display);
@@ -95,7 +96,7 @@ static void newEgg(uint32_t seed) {
   S.now = 0; S.coolUntil = 0; S.snd = 0; S.sndStart = 0;
   S.species = 0; S.speed = 0; S.vol = 2; S.sens = 2;
   S.ui = 0; S.uiSel = 0; S.req = 0; S.batt = -1; S.chg = false; S.wifiOk = false; S.netState = 0; S.netPct = 0; S.netErr = 0;
-  S.ballAns = -1; S.ballAt = 0;
+  S.ballAns = -1; S.ballAt = 0; S.ballUsed = 0;
 }
 static float clamp100(float v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
 static int rnd() { S.seed = S.seed * 1664525u + 1013904223u; return (int)((S.seed >> 16) % 10000u); }
@@ -215,7 +216,13 @@ static const char* const ANSWERS[18] = {
 };
 static void gBall(int32_t t) {   // schuetteln oder A: neue Antwort
   if (S.ui != 5 || (S.ballAns >= 0 && t < S.ballAt + 4000)) return;   // Pause zwischen zwei Fragen
-  int a = rnd() % 18; if (a == S.ballAns) a = (a + 1) % 18;
+  // wie ein gemischter Stapel: erst alle Antworten je einmal, dann neu mischen (die letzte nicht gleich wieder)
+  const int NA = 18;
+  if (S.ballUsed == (1u << NA) - 1) S.ballUsed = S.ballAns >= 0 ? (1u << S.ballAns) : 0;
+  int left = 0; for (int i = 0; i < NA; i++) if (!((S.ballUsed >> i) & 1)) left++;
+  int k = rnd() % left, a = 0;
+  for (int i = 0; i < NA; i++) if (!((S.ballUsed >> i) & 1)) { if (k == 0) { a = i; break; } k--; }
+  S.ballUsed |= 1u << a;
   S.ballAns = a; S.ballAt = t; sfx(t, A_DIZZY);
 }
 // ---- Tasten ----
