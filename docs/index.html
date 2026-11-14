@@ -94,7 +94,10 @@ const C = {
   TXT: rgb(0xe8, 0xed, 0xf5), DIM: rgb(0x8f, 0xb4, 0xd0), SEL: rgb(0xff, 0xcf, 0x4a), CHEEK: rgb(0xff, 0x8f, 0xa3),
   BUBBLE: rgb(0x9f, 0xd8, 0xf5), PLA: rgb(0xd6, 0xec, 0xf2), CAP: rgb(0xff, 0x5a, 0x5f), BAG: rgb(0xee, 0xf1, 0xf4),
   FOOD: rgb(0xff, 0x9f, 0x43), PLAY: rgb(0xb8, 0xa4, 0xff), WIENER: rgb(0xe0, 0x74, 0x52), COOKIE: rgb(0xdd, 0xb2, 0x6a), SADDLE: rgb(0x9a, 0xa4, 0xb4),
-  BALLBG: rgb(0x04, 0x06, 0x0c), BALL: rgb(0x16, 0x1a, 0x24), BALLHI: rgb(0x2c, 0x33, 0x44), BALLWIN: rgb(0x1a, 0x2f, 0x8a)
+  BALLBG: rgb(0x04, 0x06, 0x0c), BALLWIN: rgb(0x1a, 0x2f, 0x8a), HELMD: rgb(0xe0, 0xa8, 0x20), HAIR: rgb(0x3a, 0x1f, 0x2e),
+  SKINF: rgb(0xe8, 0xb8, 0x8c), SHADOW: rgb(0x9b, 0x5f, 0xd0), LIPS: rgb(0xd0, 0x2a, 0x4a), GOLD: rgb(0xf2, 0xc1, 0x4e),
+  BLOUSE: rgb(0x7b, 0x3f, 0xa0), VEST: rgb(0xff, 0x7a, 0x1a), REFL: rgb(0xd8, 0xe0, 0xe8), CLOTH: rgb(0x5a, 0x14, 0x2a),
+  ORB: rgb(0x9f, 0xa8, 0xff), ORB2: rgb(0xd8, 0xc8, 0xff)
 };
 const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
   NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21 };
@@ -232,25 +235,23 @@ const ANSWERS = [
   "Frag den|Rigger.",
   "Nur wenn|das Gaffa|reicht.",
   "Ja, aber|nur mit|Nebel.",
-  "Nein, das|Pult bootet|noch.",
   "Steck's|nochmal|aus und an.",
-  "Liegt am|Kabel. Wie|immer.",
   "Die Antwort|liegt im|Case 17.",
   "Signal ist|da. Ton|nicht.",
-  "Erst nach|dem Get-in.",
   "Frag nach|dem Abbau|nochmal.",
-  "Ja. Wenn|das DMX|will.",
-  "Kommt aus|der Cloud.|Also nein.",
   "Phantom-|speisung|vergessen.",
   "Das ist ein|Problem der|Location.",
-  "Laut genug?|Nein. Nie.",
   "Sieht gut|aus. Vom|FOH aus.",
   "Ja, aber|der Kunde|will rot.",
-  "Show must|go on.|Ja.",
+  "Ich schau mal|im Catering.",
+  "Zeit fuer ne|Produktions-|besprechung.",
+  "Tausch mal|das Kabel.",
+  "Do it. Fast.",
+  "Frag die|Helfer.",
 ];
 function gBall(S, t) {
   if (S.ui !== 5 || (S.ballAns >= 0 && t < S.ballAt + 1500)) return;
-  let a = rnd(S) % 20; if (a === S.ballAns) a = (a + 1) % 20;
+  let a = rnd(S) % 18; if (a === S.ballAns) a = (a + 1) % 18;
   S.ballAns = a; S.ballAt = t; sfx(S, t, A.DIZZY);
 }
 function pressLong(S) { if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui === 5) S.ui = 0; else S.ui = 1; }
@@ -526,18 +527,32 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   const disc = (cx, cy, r, c) => { for (let dy = -r; dy <= r; dy++) { const w = isq(r * r - dy * dy); R(cx - w, cy + dy, 2 * w + 1, 1, c); } };
   function drawBall(S, t) {
     R(0, 0, W, H, C.BALLBG);
-    const title = 'Das Pult weiss es'; T(title, dv(W - tw(title, 1), 2), 12, 1, C.DIM);
-    const ap = Math.floor(t - S.ballAt), shaking = S.ballAns >= 0 && ap >= 0 && ap < 900;
-    const bx = 67 + (shaking ? (dv(ap, 80) % 2) * 6 - 3 : 0), by = 104;
-    disc(bx, by, 62, C.BALL); disc(bx - 26, by - 30, 10, C.BALLHI);
-    if (S.ballAns < 0 || shaking) { disc(bx, by, 26, C.WHITE); T('8', bx - 10, by - 14, 4, C.EYE); }
+    const title = 'Esmeraldas VT Beratung'; T(title, dv(W - tw(title, 1), 2), 6, 1, C.SEL);
+    const ap = Math.floor(t - S.ballAt), think = S.ballAns >= 0 && ap >= 0 && ap < 900;
+    R(7, 20, 121, 62, C.TXT); R(5, 22, 125, 58, C.TXT); R(62, 82, 12, 3, C.TXT); R(64, 85, 8, 2, C.TXT); R(66, 87, 4, 2, C.TXT);
+    if (think) { const n = dv(ap, 200) % 3 + 1; for (let i = 0; i < n; i++) R(52 + i * 12, 48, 6, 6, C.BG); }
+    else if (S.ballAns < 0) T('?', 58, 41, 3, C.BG);
     else {
-      disc(bx, by, 46, C.BALLWIN);
-      const lines = ANSWERS[S.ballAns].split('|'), n = lines.length, y = by - n * 5 + 1;
-      for (let i = 0; i < n; i++) T(lines[i], bx - dv(tw(lines[i], 1), 2), y + i * 10, 1, C.TXT);
+      const lines = ANSWERS[S.ballAns].split('|'), n = lines.length, y = 51 - n * 5 + 1;
+      for (let i = 0; i < n; i++) T(lines[i], 67 - dv(tw(lines[i], 1), 2), y + i * 10, 1, C.BG);
     }
-    const h1 = 'Schuetteln!'; T(h1, dv(W - tw(h1, 1), 2), 186, 1, C.TXT);
-    const h2 = 'A fragen, B zurueck'; T(h2, dv(W - tw(h2, 1), 2), 200, 1, C.DIM);
+    const x = 67;
+    R(x - 18, 92, 36, 4, C.SEL); R(x - 22, 96, 44, 8, C.SEL); R(x - 27, 104, 54, 4, C.HELMD); R(x - 2, 92, 4, 12, C.HELMD);
+    R(x - 24, 108, 8, 28, C.HAIR); R(x + 16, 108, 8, 28, C.HAIR);
+    R(x - 16, 108, 32, 26, C.SKINF); R(x - 12, 134, 24, 4, C.SKINF);
+    R(x - 11, 114, 7, 2, C.SHADOW); R(x + 4, 114, 7, 2, C.SHADOW);
+    if ((t % 3000) < 120) { R(x - 10, 118, 5, 1, C.EYE); R(x + 5, 118, 5, 1, C.EYE); } else { R(x - 10, 116, 5, 3, C.EYE); R(x + 5, 116, 5, 3, C.EYE); }
+    R(x - 5, 127, 10, 2, C.LIPS);
+    R(x - 23, 132, 3, 6, C.GOLD); R(x + 20, 132, 3, 6, C.GOLD);
+    R(x - 5, 138, 10, 4, C.SKINF); R(x - 30, 142, 60, 44, C.BLOUSE);
+    R(x - 30, 142, 22, 44, C.VEST); R(x + 8, 142, 22, 44, C.VEST);
+    R(x - 30, 162, 22, 3, C.REFL); R(x + 8, 162, 22, 3, C.REFL); R(x - 30, 172, 22, 3, C.REFL); R(x + 8, 172, 22, 3, C.REFL);
+    R(x + 28, 138, 8, 14, C.VEST); R(x + 24, 128, 10, 8, C.SKINF);
+    R(x + 24, 112, 9, 18, C.EYE); R(x + 26, 116, 5, 4, C.OK); R(x + 30, 100, 2, 12, C.EYE);
+    if (think) for (let k = 1; k <= dv(ap, 150) % 3 + 1; k++) R(x + 34 + k * 4, 104 - k * 2, 2, 4 + k * 4, C.SEL);
+    R(0, 196, W, 44, C.CLOTH); R(0, 196, W, 2, C.GOLD);
+    disc(x, 186, 16, think ? ((dv(ap, 100) % 2) ? C.BALLWIN : C.ORB2) : C.ORB); R(x - 7, 177, 4, 4, C.WHITE);
+    R(x - 12, 200, 24, 5, C.GOLD);
   }
   return function drawScene(S, t) {
     if (S.ui === 1) drawSettings(S, t);

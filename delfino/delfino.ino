@@ -26,7 +26,10 @@ static const uint16_t C_BG = rgb(0x0b, 0x3a, 0x5c), C_BGS = rgb(0x05, 0x1c, 0x2e
   C_TXT = rgb(0xe8, 0xed, 0xf5), C_DIM = rgb(0x8f, 0xb4, 0xd0), C_SEL = rgb(0xff, 0xcf, 0x4a), C_CHEEK = rgb(0xff, 0x8f, 0xa3),
   C_BUBBLE = rgb(0x9f, 0xd8, 0xf5), C_PLA = rgb(0xd6, 0xec, 0xf2), C_CAP = rgb(0xff, 0x5a, 0x5f), C_BAG = rgb(0xee, 0xf1, 0xf4),
   C_FOOD = rgb(0xff, 0x9f, 0x43), C_PLAY = rgb(0xb8, 0xa4, 0xff), C_WIENER = rgb(0xe0, 0x74, 0x52), C_COOKIE = rgb(0xdd, 0xb2, 0x6a), C_SADDLE = rgb(0x9a, 0xa4, 0xb4),
-  C_BALLBG = rgb(0x04, 0x06, 0x0c), C_BALL = rgb(0x16, 0x1a, 0x24), C_BALLHI = rgb(0x2c, 0x33, 0x44), C_BALLWIN = rgb(0x1a, 0x2f, 0x8a);
+  C_BALLBG = rgb(0x04, 0x06, 0x0c), C_BALLWIN = rgb(0x1a, 0x2f, 0x8a), C_HELMD = rgb(0xe0, 0xa8, 0x20), C_HAIR = rgb(0x3a, 0x1f, 0x2e),
+  C_SKINF = rgb(0xe8, 0xb8, 0x8c), C_SHADOW = rgb(0x9b, 0x5f, 0xd0), C_LIPS = rgb(0xd0, 0x2a, 0x4a), C_GOLD = rgb(0xf2, 0xc1, 0x4e),
+  C_BLOUSE = rgb(0x7b, 0x3f, 0xa0), C_VEST = rgb(0xff, 0x7a, 0x1a), C_REFL = rgb(0xd8, 0xe0, 0xe8), C_CLOTH = rgb(0x5a, 0x14, 0x2a),
+  C_ORB = rgb(0x9f, 0xa8, 0xff), C_ORB2 = rgb(0xd8, 0xc8, 0xff);
 
 struct Tama {
   float hunger, fun, energy, health;
@@ -190,31 +193,29 @@ static void newGame(int32_t t, int sp) {    // neues Tier, Einstellungen und Uhr
   say(t, I_HEART); anim(t, A_NEW);
 }
 // ---- Orakel (versteckt: im Menue hinter "Zurueck" A druecken) ----
-static const char* const ANSWERS[20] = {
+static const char* const ANSWERS[18] = {
   "Mach erst|mal Line|Check.",
   "Das regelt|der|Kompressor.",
   "Frag den|Rigger.",
   "Nur wenn|das Gaffa|reicht.",
   "Ja, aber|nur mit|Nebel.",
-  "Nein, das|Pult bootet|noch.",
   "Steck's|nochmal|aus und an.",
-  "Liegt am|Kabel. Wie|immer.",
   "Die Antwort|liegt im|Case 17.",
   "Signal ist|da. Ton|nicht.",
-  "Erst nach|dem Get-in.",
   "Frag nach|dem Abbau|nochmal.",
-  "Ja. Wenn|das DMX|will.",
-  "Kommt aus|der Cloud.|Also nein.",
   "Phantom-|speisung|vergessen.",
   "Das ist ein|Problem der|Location.",
-  "Laut genug?|Nein. Nie.",
   "Sieht gut|aus. Vom|FOH aus.",
   "Ja, aber|der Kunde|will rot.",
-  "Show must|go on.|Ja.",
+  "Ich schau mal|im Catering.",
+  "Zeit fuer ne|Produktions-|besprechung.",
+  "Tausch mal|das Kabel.",
+  "Do it. Fast.",
+  "Frag die|Helfer.",
 };
 static void gBall(int32_t t) {   // schuetteln oder A: neue Antwort
   if (S.ui != 5 || (S.ballAns >= 0 && t < S.ballAt + 1500)) return;   // kurze Pause zwischen zwei Fragen
-  int a = rnd() % 20; if (a == S.ballAns) a = (a + 1) % 20;
+  int a = rnd() % 18; if (a == S.ballAns) a = (a + 1) % 18;
   S.ballAns = a; S.ballAt = t; sfx(t, A_DIZZY);
 }
 // ---- Tasten ----
@@ -518,24 +519,39 @@ static void drawUpdate(int32_t t) {
 }
 static int isq(int n) { int x = 0; while ((x + 1) * (x + 1) <= n) x++; return x; }
 static void disc(int cx, int cy, int r, uint16_t c) { for (int dy = -r; dy <= r; dy++) { int w = isq(r * r - dy * dy); R(cx - w, cy + dy, 2 * w + 1, 1, c); } }
-static void drawBall(int32_t t) {   // das Orakel
+static void drawBall(int32_t t) {   // Esmeraldas VT Beratung
   R(0, 0, W, H, C_BALLBG);
-  const char* title = "Das Pult weiss es"; T(title, (W - tw(title, 1)) / 2, 12, 1, C_DIM);
-  int ap = t - S.ballAt; bool shaking = S.ballAns >= 0 && ap >= 0 && ap < 900;
-  int bx = 67 + (shaking ? ((ap / 80) % 2) * 6 - 3 : 0), by = 104;
-  disc(bx, by, 62, C_BALL); disc(bx - 26, by - 30, 10, C_BALLHI);
-  if (S.ballAns < 0 || shaking) { disc(bx, by, 26, C_WHITE); T("8", bx - 10, by - 14, 4, C_EYE); }
+  const char* title = "Esmeraldas VT Beratung"; T(title, (W - tw(title, 1)) / 2, 6, 1, C_SEL);
+  int ap = t - S.ballAt; bool think = S.ballAns >= 0 && ap >= 0 && ap < 900;
+  // Sprechblase
+  R(7, 20, 121, 62, C_TXT); R(5, 22, 125, 58, C_TXT); R(62, 82, 12, 3, C_TXT); R(64, 85, 8, 2, C_TXT); R(66, 87, 4, 2, C_TXT);
+  if (think) { int n = (ap / 200) % 3 + 1; for (int i = 0; i < n; i++) R(52 + i * 12, 48, 6, 6, C_BG); }
+  else if (S.ballAns < 0) T("?", 58, 41, 3, C_BG);
   else {
-    disc(bx, by, 46, C_BALLWIN);
     const char* a = ANSWERS[S.ballAns]; int n = 1; for (const char* q = a; *q; q++) if (*q == '|') n++;
-    int y = by - n * 5 + 1; const char* s = a;
+    int y = 51 - n * 5 + 1; const char* s = a;
     for (int i = 0; i < n; i++) {
-      char line[16]; int k = 0; while (*s && *s != '|' && k < 15) line[k++] = *s++; line[k] = 0; if (*s == '|') s++;
-      T(line, bx - tw(line, 1) / 2, y + i * 10, 1, C_TXT);
+      char line[24]; int k = 0; while (*s && *s != '|' && k < 23) line[k++] = *s++; line[k] = 0; if (*s == '|') s++;
+      T(line, 67 - tw(line, 1) / 2, y + i * 10, 1, C_BG);
     }
   }
-  const char* h1 = "Schuetteln!"; T(h1, (W - tw(h1, 1)) / 2, 186, 1, C_TXT);
-  const char* h2 = "A fragen, B zurueck"; T(h2, (W - tw(h2, 1)) / 2, 200, 1, C_DIM);
+  int x = 67;
+  R(x - 18, 92, 36, 4, C_SEL); R(x - 22, 96, 44, 8, C_SEL); R(x - 27, 104, 54, 4, C_HELMD); R(x - 2, 92, 4, 12, C_HELMD);   // Schutzhelm
+  R(x - 24, 108, 8, 28, C_HAIR); R(x + 16, 108, 8, 28, C_HAIR);   // Locken
+  R(x - 16, 108, 32, 26, C_SKINF); R(x - 12, 134, 24, 4, C_SKINF);   // Gesicht
+  R(x - 11, 114, 7, 2, C_SHADOW); R(x + 4, 114, 7, 2, C_SHADOW);   // Lidschatten
+  if ((t % 3000) < 120) { R(x - 10, 118, 5, 1, C_EYE); R(x + 5, 118, 5, 1, C_EYE); } else { R(x - 10, 116, 5, 3, C_EYE); R(x + 5, 116, 5, 3, C_EYE); }   // Augen, blinzeln
+  R(x - 5, 127, 10, 2, C_LIPS);   // Lippenstift
+  R(x - 23, 132, 3, 6, C_GOLD); R(x + 20, 132, 3, 6, C_GOLD);   // Ohrringe
+  R(x - 5, 138, 10, 4, C_SKINF); R(x - 30, 142, 60, 44, C_BLOUSE);   // Hals, Bluse
+  R(x - 30, 142, 22, 44, C_VEST); R(x + 8, 142, 22, 44, C_VEST);   // Warnweste
+  R(x - 30, 162, 22, 3, C_REFL); R(x + 8, 162, 22, 3, C_REFL); R(x - 30, 172, 22, 3, C_REFL); R(x + 8, 172, 22, 3, C_REFL);   // Reflexstreifen
+  R(x + 28, 138, 8, 14, C_VEST); R(x + 24, 128, 10, 8, C_SKINF);   // Arm und Hand
+  R(x + 24, 112, 9, 18, C_EYE); R(x + 26, 116, 5, 4, C_OK); R(x + 30, 100, 2, 12, C_EYE);   // Funkgeraet
+  if (think) for (int k = 1; k <= (ap / 150) % 3 + 1; k++) R(x + 34 + k * 4, 104 - k * 2, 2, 4 + k * 4, C_SEL);   // Funkwellen
+  R(0, 196, W, 44, C_CLOTH); R(0, 196, W, 2, C_GOLD);                                       // Tisch
+  disc(x, 186, 16, think ? (((ap / 100) % 2) ? C_BALLWIN : C_ORB2) : C_ORB); R(x - 7, 177, 4, 4, C_WHITE);   // Kristallkugel
+  R(x - 12, 200, 24, 5, C_GOLD);                                                            // Sockel
 }
 static void drawScene(int32_t t) {
   if (S.ui == 1) drawSettings(t);
