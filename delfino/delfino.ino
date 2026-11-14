@@ -246,8 +246,8 @@ static void iconNo(int id, int x, int y, int s) {   // rot durchstreichen
 }
 static const int W = 135, H = 240, WTOP = 23;
 static const int DCX = 68, DCY = 112;                 // Mitte des Tiers
-static const int INFX = 67, INFY = 186;               // Mitte fuer Meldungen
-static const int CORNX = 132, NAMEY = 202, AGEY = 190; // Name und Alter klein rechts unten
+static const int INFX = 67, INFY = 180;               // Mitte fuer Meldungen
+static const int CORNX = 132, NAMEY = 194, AGEY = 176; // Name und Alter rechts unten
 static const int MENUY = 214;
 static const int FOODX = 112, FOODY = 30;             // Futter kommt von oben rechts
 static const int PL[5][2] = { { 4, 30 }, { 118, 32 }, { 6, 140 }, { 120, 146 }, { 8, 196 } };
@@ -412,18 +412,19 @@ static void drawGame(int32_t t) {
     icon(id, x, y, 2, C_TXT);
     if (S.msgNo) iconNo(id, x, y, 2);
   }
-  // Name und Alter klein rechts unten, links daneben der rote Warnpunkt
+  // Name und Alter rechts unten, links daneben der rote Warnpunkt
   const char* name = NAMES[S.species];
-  int nw = tw(name, 1) + 5;
-  R(CORNX - nw + 1, NAMEY, nw - 2, 10, C_SEL); R(CORNX - nw, NAMEY + 1, nw, 8, C_SEL);
-  T(name, CORNX - nw + 3, NAMEY + 1, 1, C_BG);
+  int nw = tw(name, 2) + 4;
+  R(CORNX - nw + 1, NAMEY, nw - 2, 18, C_SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C_SEL);
+  T(name, CORNX - nw + 3, NAMEY + 2, 2, C_BG);
   int ax = CORNX;
   if (!S.dead) {
     char buf[12]; snprintf(buf, sizeof(buf), "%u", (unsigned)(S.age / 60));
-    ax = CORNX - tw(buf, 1) - 9;
-    icon(I_CLOCK, ax, AGEY, 1, C_DIM); T(buf, ax + 9, AGEY, 1, C_DIM);
+    int cw = kW(I_CLOCK, 3, 2);
+    ax = CORNX - tw(buf, 2) - cw - 2;
+    iconK(I_CLOCK, ax, AGEY + 3, 3, 2, C_DIM); T(buf, ax + cw + 3, AGEY, 2, C_DIM);
   }
-  if (needs() && !S.sleeping && (t % 1000) < 500) R(ax - 8, AGEY + 1, 5, 5, C_LOW);
+  if (needs() && !S.sleeping && (t % 1000) < 500) R(ax - 9, AGEY + 5, 6, 6, C_LOW);
   drawMenu(an, sk);
 }
 
@@ -530,6 +531,8 @@ static bool loadState() {
 #include <HTTPUpdate.h>
 #include <WiFiClientSecure.h>
 #include <esp_ota_ops.h>
+#include <esp_sleep.h>
+#include <driver/gpio.h>
 // ---- Sensoren: Schwellen je Stufe (Einstellungen -> Sensoren: aus, schwach, mittel, stark) ----
 #define DEBUG 0                                              // 1 = Messwerte im Seriellen Monitor (115200 Baud)
 static const float SHAKE_SOFT[4] = { 0, 1.2f, 0.9f, 0.7f };   // mittlere Abweichung von 1 g ueber 1 s: sanft
@@ -541,7 +544,7 @@ static const uint8_t VOLUME[4] = { 0, 40, 90, 160 };
 static const uint32_t TICK_MS[3] = { 1000, 100, 20 };       // Zeitraffer 1x / 10x / 50x: so oft vergeht eine Sekunde
 
 static uint32_t lastTick, lastDraw, lastSave, lastAct, lastImu, shWin, lastMic, lastAlert, lastBatt;
-static int curBright = -1, lastAnimSeen = -1;
+static int curBright = -1;
 static float shSum = 0; static int shN = 0;
 static int loudCnt = 0; static float loudPeak = 0;
 static bool micOn = false;
@@ -553,6 +556,10 @@ static bool apOn = false;
 static uint32_t apSince = 0, apSaved = 0;
 static bool screenOn = true;
 static const uint32_t DIM_MS = 10000, OFF_MS = 60000;      // Display: nach 10 s dunkler, nach 1 min aus
+#define LEICHTSCHLAF 1                                      // 1 = bei aus-Display schlaeft der Prozessor (spart am meisten)
+static const int BTN_A_PIN = 11, BTN_B_PIN = 12;            // Tasten des StickS3 (wecken aus dem Leichtschlaf)
+static const uint8_t BRIGHT_ON = 90, BRIGHT_DIM = 20;       // Helligkeit an / gedimmt
+static int idleA = 1, idleB = 1;                            // Pegel der Tasten, wenn nicht gedrueckt
 static const uint32_t AP_MAX_MS = 300000;                  // Einrichtungs-WLAN spaetestens nach 5 min zu
 
 // Uhrzeit als Sekunden seit 1970 (Ortszeit, ohne Zeitzonen-Umrechnung)
@@ -578,7 +585,7 @@ static uint32_t buildTime() {   // Zeitpunkt, an dem der Sketch kompiliert wurde
   int m = (int)(strstr(mons, mon) - mons) / 3 + 1;
   return daysFromCivil(y, m, d) * 86400u + hh * 3600u + mi * 60u + ss;
 }
-static void micStart() { M5.Speaker.end(); if (S.sens == 0 || apOn) { micOn = false; return; } M5.Mic.begin(); micOn = true; loudCnt = 0; loudPeak = 0; }   // Sensoren aus: Mikro bleibt aus
+static void micStart() { M5.Speaker.end(); if (S.sens == 0 || apOn || !screenOn) { micOn = false; return; } M5.Mic.begin(); micOn = true; loudCnt = 0; loudPeak = 0; }   // Sensoren aus: Mikro bleibt aus
 static void micStop() { if (micOn) { M5.Mic.end(); micOn = false; } }
 static void drawNow() { drawScene((int32_t)millis()); cv.pushSprite(0, 0); }
 static bool wifiSaved() { prefs.begin("wifi", true); bool ok = prefs.getString("s", "").length() > 0; prefs.end(); return ok; }
@@ -606,9 +613,9 @@ static void apStart() {
 static void apStop() { if (!apOn) return; web.stop(); dns.stop(); WiFi.softAPdisconnect(true); WiFi.mode(WIFI_OFF); apOn = false; }
 
 // ---- Update von GitHub holen ----
-static void updFail(int code) { S.netState = 4; S.netErr = code; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); micStart(); }
+static void updFail(int code) { S.netState = 4; S.netErr = code; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); setCpuFrequencyMhz(80); micStart(); }
 static void doUpdate() {
-  micStop(); M5.Speaker.end();
+  micStop(); M5.Speaker.end(); setCpuFrequencyMhz(240);   // fuer die verschluesselte Verbindung schneller
   prefs.begin("wifi", true); String ssid = prefs.getString("s", ""), pass = prefs.getString("p", ""); prefs.end();
   if (ssid.length() == 0) { updFail(1); return; }
   S.netState = 1; drawNow();
@@ -622,7 +629,7 @@ static void doUpdate() {
     if (http.begin(cli, String(UPDATE_URL) + "version.txt")) { if (http.GET() == 200) ver = http.getString().toInt(); http.end(); } }
   if (DEBUG) Serial.printf("Update: online v%d, hier v%d\n", ver, FW_VERSION);
   if (ver <= 0) { updFail(3); return; }
-  if (ver <= FW_VERSION) { S.netState = 5; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); micStart(); return; }
+  if (ver <= FW_VERSION) { S.netState = 5; WiFi.disconnect(true); WiFi.mode(WIFI_OFF); setCpuFrequencyMhz(80); micStart(); return; }
   S.netState = 2; S.netPct = 0; drawNow();
   saveState();
   httpUpdate.setFollowRedirects(HTTPC_FORCE_FOLLOW_REDIRECTS);
@@ -652,6 +659,8 @@ void setup() {
     if (S.now == 0 || S.now > clk) S.now = clk; else catchUp(clk);  // Zeit, in der er aus war, nachholen
   } else if (S.now < bt) S.now = bt;                                // ohne Uhr steht die Zeit, solange er aus ist
   S.wifiOk = wifiSaved();
+  idleA = digitalRead(BTN_A_PIN); idleB = digitalRead(BTN_B_PIN);   // Ruhepegel der Tasten merken
+  setCpuFrequencyMhz(80);                                            // reicht fuers Spiel und spart Strom
   Serial.printf("Delfino v%d: eingebaute Uhr %s, Spielzeit %02d:%02d\n", FW_VERSION, hasRtc ? "gefunden" : "nicht gefunden", hourOf(S.now), (int)((S.now / 60) % 60));
   saveState();
   micStart();
@@ -681,14 +690,14 @@ void loop() {
   // Zeit (mit Zeitraffer): jede Sekunde ein Spielschritt, die Uhr laeuft mit
   uint32_t tickMs = TICK_MS[S.speed];
   int n = 0;
-  while (now - lastTick >= tickMs && n < 100) { gStep(); S.now++; lastTick += tickMs; n++; }
+  while (now - lastTick >= tickMs && n < 500) { gStep(); S.now++; lastTick += tickMs; n++; }
   if (now - lastTick >= tickMs) lastTick = now;
   // Akku alle 5 s abfragen
   if (now - lastBatt >= 5000 || lastBatt == 0) { lastBatt = now; S.batt = M5.Power.getBatteryLevel(); S.chg = (int)M5.Power.isCharging() == 1; }
   // Bewegung: 50x pro Sekunde messen, jede Sekunde auswerten
-  bool sensing = S.ui == 0 && S.sens > 0;
-  if (S.sens == 0 && micOn) micStop(); else if (S.sens > 0 && !micOn && playId < 0 && !apOn) micStart();
-  if (now - lastImu >= 20) {
+  bool sensing = S.ui == 0 && S.sens > 0 && screenOn;   // Display aus: Sensoren aus
+  if (!sensing && micOn) micStop(); else if (sensing && !micOn && playId < 0 && !apOn) micStart();
+  if (sensing && now - lastImu >= 20) {
     lastImu = now; float ax, ay, az;
     if (M5.Imu.getAccel(&ax, &ay, &az)) { shSum += fabsf(sqrtf(ax * ax + ay * ay + az * az) - 1.0f); shN++; }
   }
@@ -726,20 +735,32 @@ void loop() {
     if (m[i] < 0) { playId = -1; micStart(); lastMic = now + 100; }
     else if (i != playIdx) { playIdx = i; if (m[i] > 0) M5.Speaker.tone(m[i], m[i + 1]); }
   }
-  // Anzeige und Energiesparen: nach 10 s dunkler, nach 1 min aus (WLAN-Einrichtung und Update ausgenommen)
-  if (S.anim != lastAnimSeen && S.animStart > (int32_t)lastAct) lastAct = now;   // Sensor-Ereignisse wecken auch
-  lastAnimSeen = S.anim;
+  // Anzeige und Energiesparen: nach 10 s dunkler, nach 1 min aus (WLAN-Einrichtung und Update ausgenommen).
+  // Nur ein Tastendruck weckt das Display wieder.
   bool keepOn = S.ui >= 3;
   uint32_t idle = now - lastAct;
   if (!keepOn && idle > OFF_MS) {
-    if (screenOn) { M5.Display.setBrightness(0); M5.Display.sleep(); screenOn = false; curBright = 0; setCpuFrequencyMhz(80); }
+    if (screenOn) { M5.Display.setBrightness(0); M5.Display.sleep(); screenOn = false; curBright = 0; micStop(); }
   } else {
-    if (!screenOn) { setCpuFrequencyMhz(240); M5.Display.wakeup(); screenOn = true; curBright = -1; lastDraw = 0; }
+    if (!screenOn) { M5.Display.wakeup(); screenOn = true; curBright = -1; lastDraw = 0; }
     bool moving = S.anim && (int32_t)(now - S.animStart) < 1200;
     if (now - lastDraw >= (moving ? 40u : 100u)) { drawScene(t); cv.pushSprite(0, 0); lastDraw = now; }
-    int target = (!keepOn && idle > DIM_MS) ? (S.sleeping ? 5 : 25) : 120;
+    int target = (!keepOn && idle > DIM_MS) ? (S.sleeping ? 5 : BRIGHT_DIM) : BRIGHT_ON;
     if (target != curBright) { M5.Display.setBrightness(target); curBright = target; }
   }
   if (now - lastSave >= 30000) { saveState(); lastSave = now; }
+  if (screenOn) { delay(4); return; }   // kurze Pause: der Prozessor darf zwischendurch ruhen
+#if LEICHTSCHLAF
+  // Display aus: Prozessor schlaeft, wacht alle 4 s fuer die Spielzeit auf oder sofort bei Tastendruck
+  if (playId < 0 && !apOn) {
+    esp_sleep_enable_timer_wakeup(4000000ULL);
+    gpio_wakeup_enable((gpio_num_t)BTN_A_PIN, idleA ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
+    gpio_wakeup_enable((gpio_num_t)BTN_B_PIN, idleB ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
+    esp_sleep_enable_gpio_wakeup();
+    esp_light_sleep_start();
+  }
+#else
+  delay(20);
+#endif
 }
 #endif
