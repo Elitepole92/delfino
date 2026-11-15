@@ -442,6 +442,33 @@ static const int16_t HAM[][5] = {
   { -12, -86, 6, 2, HC_HELMS },
   { -14, -84, 3, 2, HC_HELMS },
 };
+// Pole-Dance-Pose: seitlich, Ruecken zur Stange, vorgebeugt; Popo wackelt, Kopf schaut nach vorn
+static const int16_t HPOLE[][5] = {
+  { 24, -24, 9, 13, HC_FURD },
+  { 22, -12, 8, 13, HC_FURD },
+  { 13, -22, 9, 12, HC_FUR },
+  { 11, -11, 8, 12, HC_FUR },
+  { 19, 1, 10, 4, HC_PINKD },
+  { 8, 1, 10, 4, HC_PINK },
+  { -6, -50, 22, 22, HC_FUR },
+  { 8, -46, 18, 24, HC_FUR },
+  { -5, -50, 21, 19, HC_VEST },
+  { 10, -46, 10, 18, HC_VEST },
+  { 2, -50, 3, 19, HC_REFL },
+  { 12, -46, 3, 18, HC_REFL },
+  { 0, -34, 6, 9, HC_FUR },
+  { 3, -26, 6, 8, HC_FUR },
+  { 5, -19, 7, 4, HC_PINK }
+};
+static const int16_t HBUTT[][5] = {
+  { 22, -45, 12, 2, HC_FUR },
+  { 19, -43, 18, 2, HC_FUR },
+  { 18, -41, 20, 15, HC_FUR },
+  { 19, -26, 18, 2, HC_FUR },
+  { 22, -24, 12, 2, HC_FUR },
+  { 35, -39, 3, 12, HC_FURD },
+  { 37, -42, 3, 3, HC_PINK }
+};
 static const uint16_t HPAL[20] = { C_HFUR, C_HFURD, C_HCREAM, C_HPINK, C_HPINKD, C_HVEST, C_HVESTD, C_REFL, C_EYE, C_WHITE, C_HMOUTH, C_HELM, C_HELMB, C_HELMS, C_CASE, C_ALU, C_ALUD, C_GAFFA, C_MARK, C_WHEEL };
 static uint16_t hcol(int k, bool sk, bool dead) {
   if (dead && k == HC_FUR) return C_DEAD;
@@ -533,15 +560,17 @@ static void partyLights(int ap) {   // Party: Scheinwerfer schiessen bunte Strah
   const int lx[3] = { 24, 67, 110 }; const uint16_t pc[3] = { C_MAG, C_CYAN, C_WARM };
   for (int i = 0; i < 3; i++) { uint16_t col = pc[(ap / 200 + i) % 3]; int dir = ((ap / 300 + i) % 3) - 1; for (int k = 0; k < 12; k++) R(lx[i] + dir * k * 3, 52 + k * 7, 2, 2, col); }
 }
-static void partyFront(int cx, int cy, int ap) {   // Pole-Dance: Stange, Discokugel, Lichtpunkte, Dollarscheine, Noten
-  int px = cx + 26;
-  R(px - 3, 36, 9, 3, C_ALUD); R(px, 36, 3, 173, C_ALU); R(px, 36, 1, 173, C_WHITE); R(px - 5, 209, 13, 3, C_ALUD);   // Stange
+static void partyPole(int cx) {   // dicke dunkle Stange, hinter dem Hamster
+  int px = cx + 38;
+  R(px - 2, 36, 10, 3, C_ALUD); R(px, 36, 6, 173, C_HELM); R(px + 1, 36, 1, 173, C_HELMB); R(px - 4, 209, 14, 3, C_ALUD);
+}
+static void partyFront(int cx, int cy, int ap) {   // Pole-Dance: Discokugel mit Strahlen, Dollarscheine, Noten
   int by = ap < 800 ? 36 + 44 * ap / 800 : 80;   // Discokugel faehrt runter und dreht sich
   R(cx, 36, 1, by - 36 + 1, C_TRUSS);
   for (int dy = -9; dy <= 9; dy += 3) for (int dx = -9; dx <= 9; dx += 3) if (dx * dx + dy * dy <= 90) R(cx + dx - 1, by + 10 + dy - 1, 3, 3, (((dx + 9) / 3 + (dy + 9) / 3 + ap / 120) % 2) ? C_REFL : C_HELMB);
   R(cx - 5, by + 4, 2, 2, C_WHITE);
-  const uint16_t rc[3] = { C_MAG, C_CYAN, C_WARM };
-  for (int k = 0; k < 8; k++) R((k * 41 + ap / 7) % 130, 40 + (k * 53) % 150, 2, 2, rc[(k + ap / 150) % 3]);   // Lichtpunkte
+  const int rdx[6] = { -1, -2, -1, 1, 2, 1 }, rdy[6] = { 0, -1, -1, -1, -1, 0 }, r0[6] = { 12, 7, 8, 8, 7, 12 };
+  for (int i = 0; i < 6; i++) { int L = 2 + ((ap / 120 + i) % 2) * 3; for (int s = 0; s < L; s++) R(cx + rdx[i] * (r0[i] + s), by + 10 + rdy[i] * (r0[i] + s), 1, 1, (i % 2) ? C_WARM : C_WHITE); }   // Strahlen oben um die Kugel
   for (int k = 0; k < 8; k++) {   // Dollarscheine fliegen von links und rechts rein
     int pr = (ap / 3 + k * 47) % 140, x = (k % 2) ? 135 - pr : pr - 10, y = 70 + (k * 29) % 110 + ((ap / 120 + k) % 2);
     R(x, y, 10, 5, C_CASHL); R(x + 1, y + 1, 8, 3, C_CASH); R(x + 4, y + 1, 2, 3, C_CASHL);
@@ -580,9 +609,14 @@ static void stencilName(int cx, int cy) {
 }
 static void hamster(int cx, int cy, int mo, bool sk, bool dead, int32_t t, int an, bool full) {
   gcx = cx; gcy = cy;
+  if (gParty) {   // Pole-Dance: Koerper seitlich, danach Kopf (von vorn) versetzt nach links unten
+    for (unsigned i = 0; i < sizeof(HPOLE) / sizeof(HPOLE[0]); i++) SR(HPOLE[i][0], HPOLE[i][1], HPOLE[i][2], HPOLE[i][3], hcol(HPOLE[i][4], sk, dead));
+    for (unsigned i = 0; i < sizeof(HBUTT) / sizeof(HBUTT[0]); i++) SR(HBUTT[i][0] + gHip, HBUTT[i][1] - gHip, HBUTT[i][2], HBUTT[i][3], hcol(HBUTT[i][4], sk, dead));
+    gcx = cx - 22; gcy = cy + 18;
+  }
   for (unsigned i = 0; i < sizeof(HAM) / sizeof(HAM[0]); i++) {
-    int dy = HAM[i][1]; if (gParty && dy >= 1) continue;   // Party: Case weg
-    SR(HAM[i][0] + (dy >= -14 ? gHip : 0), dy, HAM[i][2], HAM[i][3], hcol(HAM[i][4], sk, dead));
+    if (gParty && HAM[i][1] > -54) continue;   // Party: nur der Kopf
+    SR(HAM[i][0], HAM[i][1], HAM[i][2], HAM[i][3], hcol(HAM[i][4], sk, dead));
   }
   if (full && !gParty) stencilName(cx, cy);   // Name als Schablonen-Aufdruck
   bool blink = (t % 3200) < 140; uint16_t E = C_EYE, fur = hcol(HC_FUR, sk, dead);
@@ -599,6 +633,7 @@ static void hamster(int cx, int cy, int mo, bool sk, bool dead, int32_t t, int a
   else if (mo == M_SICK) { SR(-4, -55, 3, 1, M); SR(-1, -56, 3, 1, M); SR(2, -55, 3, 1, M); }
   else if (mo == M_SLEEP) SR(-2, -56, 4, 1, M);
   else SR(-4, -55, 8, 1, M);
+  gcx = cx; gcy = cy;
   if (!full) return;
   if (sk) { SR(-46, -86, 2, 8, C_LOW); SR(-49, -83, 8, 2, C_LOW); }
   if (mo == M_SLEEP && an != A_SLEEP) { bool z = ((t / 700) % 2) == 1; T(z ? "Z" : "z", cx + sc(26), cy + sc(-86) + (z ? 0 : 4), 2, C_TXT); }
@@ -725,8 +760,8 @@ static void drawGame(int32_t t) {
   bool pend = an == A_MEDIC && ap < 500 && !ham;   // Kapsel noch unterwegs: sieht noch krank aus
   if (pend && mo != M_SLEEP) mo = M_SICK;
   bool sk = (S.sick || pend) && !S.dead;
-  if (party) partyLights(ap);
-  gParty = party; gHip = party ? ((ap / 150) % 2) * 6 - 3 : 0;
+  if (party) { partyLights(ap); partyPole(cx); }
+  gParty = party; gHip = party ? ((ap / 150) % 2) * 3 : 0;
   drawPet(S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
   gParty = false; gHip = 0;
   const Spec& P = SPC[S.species];

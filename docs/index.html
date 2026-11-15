@@ -501,6 +501,32 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     if (i % 2 === 0) { R(x + 1, y, 4, 2, C.CAP); R(x, y + 2, 6, 11, C.PLA); R(x, y + 6, 6, 2, C.CAP); }
     else { R(x, y, 10, 2, C.BAG); R(x + 1, y + 2, 8, 5, C.BAG); R(x, y + 7, 3, 3, C.BAG); R(x + 7, y + 7, 3, 3, C.BAG); }
   };
+  const HPOLE = [
+    [24, -24, 9, 13, HC.FURD],
+    [22, -12, 8, 13, HC.FURD],
+    [13, -22, 9, 12, HC.FUR],
+    [11, -11, 8, 12, HC.FUR],
+    [19, 1, 10, 4, HC.PINKD],
+    [8, 1, 10, 4, HC.PINK],
+    [-6, -50, 22, 22, HC.FUR],
+    [8, -46, 18, 24, HC.FUR],
+    [-5, -50, 21, 19, HC.VEST],
+    [10, -46, 10, 18, HC.VEST],
+    [2, -50, 3, 19, HC.REFL],
+    [12, -46, 3, 18, HC.REFL],
+    [0, -34, 6, 9, HC.FUR],
+    [3, -26, 6, 8, HC.FUR],
+    [5, -19, 7, 4, HC.PINK]
+  ];
+  const HBUTT = [
+    [22, -45, 12, 2, HC.FUR],
+    [19, -43, 18, 2, HC.FUR],
+    [18, -41, 20, 15, HC.FUR],
+    [19, -26, 18, 2, HC.FUR],
+    [22, -24, 12, 2, HC.FUR],
+    [35, -39, 3, 12, HC.FURD],
+    [37, -42, 3, 3, HC.PINK]
+  ];
   const HPAL = [C.HFUR, C.HFURD, C.HCREAM, C.HPINK, C.HPINKD, C.HVEST, C.HVESTD, C.REFL, C.EYE, C.WHITE, C.HMOUTH, C.HELM, C.HELMB, C.HELMS, C.CASE, C.ALU, C.ALUD, C.GAFFA, C.MARK, C.WHEEL];
   const hcol = (k, sk, dead) => {
     if (dead && k === HC.FUR) return C.DEAD;
@@ -549,15 +575,17 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     const lx = [24, 67, 110], pc = [C.MAG, C.CYAN, C.WARM];
     for (let i = 0; i < 3; i++) { const col = pc[(dv(ap, 200) + i) % 3], dir = ((dv(ap, 300) + i) % 3) - 1; for (let k = 0; k < 12; k++) R(lx[i] + dir * k * 3, 52 + k * 7, 2, 2, col); }
   }
+  function partyPole(cx) {
+    const px = cx + 38;
+    R(px - 2, 36, 10, 3, C.ALUD); R(px, 36, 6, 173, C.HELM); R(px + 1, 36, 1, 173, C.HELMB); R(px - 4, 209, 14, 3, C.ALUD);
+  }
   function partyFront(cx, cy, ap) {
-    const px = cx + 26;
-    R(px - 3, 36, 9, 3, C.ALUD); R(px, 36, 3, 173, C.ALU); R(px, 36, 1, 173, C.WHITE); R(px - 5, 209, 13, 3, C.ALUD);
     const by = ap < 800 ? 36 + dv(44 * ap, 800) : 80;
     R(cx, 36, 1, by - 36 + 1, C.TRUSS);
     for (let dy = -9; dy <= 9; dy += 3) for (let dx = -9; dx <= 9; dx += 3) if (dx * dx + dy * dy <= 90) R(cx + dx - 1, by + 10 + dy - 1, 3, 3, ((dv(dx + 9, 3) + dv(dy + 9, 3) + dv(ap, 120)) % 2) ? C.REFL : C.HELMB);
     R(cx - 5, by + 4, 2, 2, C.WHITE);
-    const rc = [C.MAG, C.CYAN, C.WARM];
-    for (let k = 0; k < 8; k++) R((k * 41 + dv(ap, 7)) % 130, 40 + (k * 53) % 150, 2, 2, rc[(k + dv(ap, 150)) % 3]);
+    const rdx = [-1, -2, -1, 1, 2, 1], rdy = [0, -1, -1, -1, -1, 0], r0 = [12, 7, 8, 8, 7, 12];
+    for (let i = 0; i < 6; i++) { const L = 2 + ((dv(ap, 120) + i) % 2) * 3; for (let s = 0; s < L; s++) R(cx + rdx[i] * (r0[i] + s), by + 10 + rdy[i] * (r0[i] + s), 1, 1, (i % 2) ? C.WARM : C.WHITE); }
     for (let k = 0; k < 8; k++) {
       const pr = (dv(ap, 3) + k * 47) % 140, x = (k % 2) ? 135 - pr : pr - 10, y = 70 + (k * 29) % 110 + ((dv(ap, 120) + k) % 2);
       R(x, y, 10, 5, C.CASHL); R(x + 1, y + 1, 8, 3, C.CASH); R(x + 4, y + 1, 2, 3, C.CASHL);
@@ -594,7 +622,12 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   }
   function hamster(cx, cy, mo, sk, dead, t, an, full) {
     gcx = cx; gcy = cy;
-    for (const e of HAM) { if (gParty && e[1] >= 1) continue; SR(e[0] + (e[1] >= -14 ? gHip : 0), e[1], e[2], e[3], hcol(e[4], sk, dead)); }
+    if (gParty) {
+      for (const e of HPOLE) SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead));
+      for (const e of HBUTT) SR(e[0] + gHip, e[1] - gHip, e[2], e[3], hcol(e[4], sk, dead));
+      gcx = cx - 22; gcy = cy + 18;
+    }
+    for (const e of HAM) { if (gParty && e[1] > -54) continue; SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead)); }
     if (full && !gParty) stencilName(cx, cy);
     const blink = (t % 3200) < 140, E = C.EYE, fur = hcol(HC.FUR, sk, dead);
     if (mo === M.DEAD) { for (let i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
@@ -610,6 +643,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     else if (mo === M.SICK) { SR(-4, -55, 3, 1, Mo); SR(-1, -56, 3, 1, Mo); SR(2, -55, 3, 1, Mo); }
     else if (mo === M.SLEEP) SR(-2, -56, 4, 1, Mo);
     else SR(-4, -55, 8, 1, Mo);
+    gcx = cx; gcy = cy;
     if (!full) return;
     if (sk) { SR(-46, -86, 2, 8, C.LOW); SR(-49, -83, 8, 2, C.LOW); }
     if (mo === M.SLEEP && an !== A.SLEEP) { const z = (Math.floor(t / 700) % 2) === 1; T(z ? 'Z' : 'z', cx + sc(26), cy + sc(-86) + (z ? 0 : 4), 2, C.TXT); }
@@ -727,8 +761,8 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     const pend = an === A.MEDIC && ap < 500 && !ham;
     if (pend && mo !== M.SLEEP) mo = M.SICK;
     const sk = (S.sick || pend) && !S.dead;
-    if (party) partyLights(ap);
-    gParty = party; gHip = party ? (dv(ap, 150) % 2) * 6 - 3 : 0;
+    if (party) { partyLights(ap); partyPole(cx); }
+    gParty = party; gHip = party ? (dv(ap, 150) % 2) * 3 : 0;
     drawPet(S, S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
     gParty = false; gHip = 0;
     const P = SPC[S.species];
