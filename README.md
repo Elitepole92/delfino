@@ -1,6 +1,6 @@
 # Delfino
 
-Ein kleines Tamagotchi fuer den **M5StickS3**: Delfin, Orca oder Schildkroete im Wasser.
+Ein kleines Tamagotchi fuer den **M5StickS3**: Delfin, Orca oder Schildkroete im Wasser, oder der Medien Hamster am Messestand.
 Fuettern (vegane Wienerle und Haferkekse), spielen, schlafen legen, Plastik rausfischen,
 Medizin geben. Schuetteln macht Wellen.
 

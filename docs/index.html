@@ -97,10 +97,44 @@ const C = {
   BALLBG: rgb(0x1c, 0x12, 0x30), BALLWIN: rgb(0x1a, 0x2f, 0x8a), HELM: rgb(0x22, 0x24, 0x2a), HELMB: rgb(0x48, 0x4c, 0x58), HELMS: rgb(0x7a, 0x80, 0x90), HAIR: rgb(0x3a, 0x1f, 0x2e),
   SKINF: rgb(0xe8, 0xb8, 0x8c), SHADOW: rgb(0x9b, 0x5f, 0xd0), LIPS: rgb(0xd0, 0x2a, 0x4a), GOLD: rgb(0xf2, 0xc1, 0x4e),
   BLOUSE: rgb(0x7b, 0x3f, 0xa0), VEST: rgb(0xff, 0x7a, 0x1a), VESTY: rgb(0xe6, 0xf2, 0x2a), REFL: rgb(0xd8, 0xe0, 0xe8), CLOTH: rgb(0x5a, 0x14, 0x2a),
-  ORB: rgb(0x9f, 0xa8, 0xff), ORB2: rgb(0xd8, 0xc8, 0xff), GLOVE: rgb(0x8a, 0x8f, 0x9c), GLOVE2: rgb(0x5c, 0x61, 0x6e)
+  ORB: rgb(0x9f, 0xa8, 0xff), ORB2: rgb(0xd8, 0xc8, 0xff), GLOVE: rgb(0x8a, 0x8f, 0x9c), GLOVE2: rgb(0x5c, 0x61, 0x6e),
+  HFUR: rgb(0xe8, 0xa0, 0x5a),
+  HFURD: rgb(0xc9, 0x80, 0x40),
+  HCREAM: rgb(0xf8, 0xe4, 0xc4),
+  HPINK: rgb(0xff, 0x9f, 0xb3),
+  HPINKD: rgb(0xf0, 0x6f, 0x8a),
+  HVEST: rgb(0xff, 0x5f, 0xa8),
+  HVESTD: rgb(0xd8, 0x3f, 0x88),
+  HMOUTH: rgb(0x6a, 0x3a, 0x2a),
+  HFURS: rgb(0xc8, 0xc0, 0x80),
+  HFURSD: rgb(0xa8, 0xa0, 0x60),
+  CASE: rgb(0x1e, 0x20, 0x26),
+  ALU: rgb(0xc4, 0xcc, 0xd6),
+  ALUD: rgb(0x8e, 0x96, 0xa2),
+  GAFFA: rgb(0xd6, 0xd4, 0xc8),
+  MARK: rgb(0x2a, 0x2a, 0x30),
+  WHEEL: rgb(0x2a, 0x6a, 0xe0),
+  MWALL: rgb(0x1a, 0x1f, 0x2e),
+  MWALL2: rgb(0x22, 0x28, 0x3a),
+  CARPET: rgb(0x3a, 0x44, 0x5a),
+  CARPETL: rgb(0x55, 0x60, 0x78),
+  TRUSS: rgb(0xb0, 0xb8, 0xc4),
+  LAMP: rgb(0x16, 0x16, 0x1a),
+  WARM: rgb(0xff, 0xe0, 0x9a),
+  MAG: rgb(0xff, 0x5f, 0xd0),
+  CYAN: rgb(0x5f, 0xe8, 0xff),
+  TV: rgb(0x0c, 0x0c, 0x10),
+  SCR1: rgb(0x1f, 0x6f, 0xc8),
+  SCR2: rgb(0x14, 0x22, 0x3a),
+  BANNER: rgb(0xf2, 0xf4, 0xf8),
+  DESK: rgb(0xe6, 0xe8, 0xee),
+  DESKD: rgb(0xb8, 0xbc, 0xc8),
+  COFFEE: rgb(0x6b, 0x3e, 0x1f),
+  FILTER: rgb(0xe0, 0xa0, 0x50),
+  EMBER: rgb(0xff, 0x6a, 0x2a)
 };
 const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
-  NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21 };
+  NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21, CUP: 22, CIG: 23 };
 const ICONS = [
   ['#.#.#...##.', '#.#.#..###.', '#.#.#..###.', '#####..###.', '.###...###.', '..#.....#..', '..#.....#..', '..#.....#..', '..#.....#..'],
   ['..########..', '.##########.', '###.####.###', '##...##.#.##', '###.####.###', '############', '####....####', '.##......##.'],
@@ -123,10 +157,11 @@ const ICONS = [
   ['...###...', '...###...', '...###...', '#########', '.#######.', '..#####..', '...###...', '....#....', '#########'],
   ['...#.....', '..##.....', '.########', '#########', '.########', '..##.....', '...#.....'],
   ['........#', '.......##', '#.....##.', '##...##..', '.##.##...', '..###....', '...#.....'],
-  ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#']
-];
+  ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#'],
+  ['..#..#.....', '.#..#......', '..#..#.....', '########...', '#########..', '########.#.', '#########..', '.######....', '..####.....'],
+  ['........#.#.', '.........#..', '........#...', '############', '############'],];
 const icW = (id) => ICONS[id][0].length, icH = (id) => ICONS[id].length;
-const NAMES = ['Delfino', 'Orki', 'Schildi'];
+const NAMES = ['Delfino', 'Orki', 'Schildi', 'Medien Hamster'];
 
 function newEgg(seed) {
   return { hunger: 80, fun: 80, energy: 80, health: 100, age: 0, seed: (seed >>> 0) || 12345,
@@ -183,13 +218,13 @@ function step(S) {
 function actFeed(S, t) {
   if (S.dead) return;
   if (S.sleeping) { say(S, t, I.MOON); return; }
-  if (S.hunger > 90) { say(S, t, I.FORK, true); return; }
+  if (S.hunger > 90) { say(S, t, S.species === 3 ? I.CUP : I.FORK, true); return; }
   S.hunger = clamp(S.hunger + 25); say(S, t, I.HEART); anim(S, t, A.FEED, S.age % 2);
 }
 function actPlay(S, t) {
   if (S.dead) return;
   if (S.sleeping) { say(S, t, I.MOON); return; }
-  if (S.sick) { say(S, t, I.PAD, true); return; }
+  if (S.sick) { say(S, t, S.species === 3 ? I.CIG : I.PAD, true); return; }
   if (S.energy < 15) { say(S, t, I.BOLT, true); return; }
   S.fun = clamp(S.fun + 20); S.energy = clamp(S.energy - 8); S.hunger = clamp(S.hunger - 5); say(S, t, I.HEART); anim(S, t, A.PLAY);
 }
@@ -218,6 +253,7 @@ function gShake(S, t, lvl) {
 function catchUp(S, target) {
   if (target <= S.now) return;
   let n = Math.floor((target - S.now) / 10); if (n > 60480) n = 60480;
+  if (n === 0) { S.now = target; return; }
   for (let i = 0; i < n && !S.dead; i++) { S.now += 10; S.sleeping = true; step(S); }
   S.now = target;
   if (!S.dead && !isNight(S) && S.energy >= 50) S.sleeping = false;
@@ -263,7 +299,7 @@ function pressLong(S) { if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui
 function pressNext(S) {
   if (S.ui === 1) S.uiSel = (S.uiSel + 1) % (SET_ROWS.length + 1);
   else if (S.ui === 5) { S.ui = 1; S.uiSel = SET_ROWS.length; }
-  else if (S.ui === 2) S.uiSel = (S.uiSel + 1) % 4;
+  else if (S.ui === 2) S.uiSel = (S.uiSel + 1) % 5;
   else if (S.ui === 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
 function pressOk(S, t) {
@@ -279,7 +315,7 @@ function pressOk(S, t) {
     else if (S.uiSel === SET_ROWS.length) { S.ui = 5; S.ballAns = -1; }
     return;
   }
-  if (S.ui === 2) { if (S.uiSel === 3) { S.ui = 1; S.uiSel = 0; } else { newGame(S, t, S.uiSel); S.ui = 0; } return; }
+  if (S.ui === 2) { if (S.uiSel === 4) { S.ui = 1; S.uiSel = 0; } else { newGame(S, t, S.uiSel); S.ui = 0; } return; }
   if (S.ui === 5) { gBall(S, t); return; }
   if (S.ui >= 3) { S.ui = 1; return; }
   if (S.dead) { newGame(S, t, S.species); return; }
@@ -300,13 +336,139 @@ function mood(S) {
 const tw = (s, size) => 6 * size * s.length;
 const dv = (a, b) => Math.trunc(a / b);
 const W = 135, H = 240, WTOP = 23, DCX = 68, DCY = 112, INFX = 67, INFY = 180, CORNX = 132, NAMEY = 194, AGEY = 176, MENUY = 214, FOODX = 112, FOODY = 30;
+const HC = { FUR: 0, FURD: 1, CREAM: 2, PINK: 3, PINKD: 4, VEST: 5, VESTD: 6, REFL: 7, EYE: 8, WHITE: 9, MOUTH: 10, HELM: 11, HELMB: 12, HELMS: 13, CASE: 14, ALU: 15, ALUD: 16, GAFFA: 17, MARK: 18, WHEEL: 19 };
+const HAM = [
+  [-31, 28, 6, 3, HC.ALUD],
+  [25, 28, 6, 3, HC.ALUD],
+  [-32, 31, 8, 6, HC.WHEEL],
+  [-31, 30, 6, 8, HC.WHEEL],
+  [-29, 33, 2, 2, HC.ALU],
+  [24, 31, 8, 6, HC.WHEEL],
+  [25, 30, 6, 8, HC.WHEEL],
+  [27, 33, 2, 2, HC.ALU],
+  [-34, 2, 68, 26, HC.CASE],
+  [-34, 2, 68, 2, HC.ALU],
+  [-34, 26, 68, 2, HC.ALU],
+  [-34, 2, 2, 26, HC.ALU],
+  [32, 2, 2, 26, HC.ALU],
+  [-35, 1, 5, 5, HC.ALUD],
+  [30, 1, 5, 5, HC.ALUD],
+  [-35, 24, 5, 5, HC.ALUD],
+  [-28, 6, 46, 18, HC.GAFFA],
+  [14, 12, 10, 6, HC.ALU],
+  [16, 14, 6, 2, HC.ALUD],
+  [30, 24, 5, 5, HC.ALUD],
+  [-17, -52, 34, 2, HC.FUR],
+  [-21, -50, 42, 2, HC.FUR],
+  [-24, -48, 48, 4, HC.FUR],
+  [-26, -44, 52, 30, HC.FUR],
+  [-27, -14, 54, 8, HC.FUR],
+  [-25, -6, 50, 5, HC.FUR],
+  [-30, -44, 6, 16, HC.FUR],
+  [24, -44, 6, 16, HC.FUR],
+  [-30, -30, 6, 3, HC.FURD],
+  [24, -30, 6, 3, HC.FURD],
+  [-22, -50, 12, 2, HC.VEST],
+  [10, -50, 12, 2, HC.VEST],
+  [-24, -48, 18, 38, HC.VEST],
+  [6, -48, 18, 38, HC.VEST],
+  [-6, -42, 12, 32, HC.VEST],
+  [-6, -50, 12, 4, HC.CREAM],
+  [-4, -46, 8, 4, HC.CREAM],
+  [-2, -42, 4, 3, HC.CREAM],
+  [-1, -39, 2, 29, HC.VESTD],
+  [-24, -31, 22, 3, HC.REFL],
+  [2, -31, 22, 3, HC.REFL],
+  [-24, -23, 22, 3, HC.REFL],
+  [2, -23, 22, 3, HC.REFL],
+  [-25, -10, 50, 1, HC.FURD],
+  [-1, -9, 2, 7, HC.FURD],
+  [-24, -6, 18, 12, HC.FURD],
+  [-23, -7, 16, 12, HC.FUR],
+  [-22, -8, 14, 1, HC.FUR],
+  [6, -6, 18, 12, HC.FURD],
+  [7, -7, 16, 12, HC.FUR],
+  [8, -8, 14, 1, HC.FUR],
+  [-20, -2, 10, 7, HC.PINK],
+  [10, -2, 10, 7, HC.PINK],
+  [-21, -6, 3, 3, HC.PINKD],
+  [-17, -7, 3, 3, HC.PINKD],
+  [-13, -6, 3, 3, HC.PINKD],
+  [9, -6, 3, 3, HC.PINKD],
+  [13, -7, 3, 3, HC.PINKD],
+  [17, -6, 3, 3, HC.PINKD],
+  [-27, -79, 8, 8, HC.FUR],
+  [19, -79, 8, 8, HC.FUR],
+  [-25, -77, 4, 4, HC.PINK],
+  [21, -77, 4, 4, HC.PINK],
+  [-14, -78, 28, 2, HC.FUR],
+  [-18, -76, 36, 2, HC.FUR],
+  [-21, -74, 42, 4, HC.FUR],
+  [-22, -70, 44, 14, HC.FUR],
+  [-21, -56, 42, 2, HC.FUR],
+  [-18, -54, 36, 2, HC.FUR],
+  [-25, -66, 8, 11, HC.FUR],
+  [17, -66, 8, 11, HC.FUR],
+  [-23, -64, 5, 7, HC.CREAM],
+  [18, -64, 5, 7, HC.CREAM],
+  [-9, -61, 18, 9, HC.CREAM],
+  [-2, -60, 4, 3, HC.PINKD],
+  [-11, -91, 22, 2, HC.HELM],
+  [-15, -89, 30, 3, HC.HELM],
+  [-18, -86, 36, 8, HC.HELM],
+  [-22, -78, 44, 3, HC.HELMB],
+  [-2, -91, 4, 13, HC.HELMB],
+  [-12, -86, 6, 2, HC.HELMS],
+  [-14, -84, 3, 2, HC.HELMS],
+];
+const MC = { WALL: 0, WALL2: 1, CARPET: 2, CARPETL: 3, TRUSS: 4, TV: 5, SCR1: 6, SCR2: 7, BAR1: 8, BAR2: 9, BAR3: 10, BANNER: 11, PINKV: 12, BLUE: 13, MARK: 14, ALUD: 15, DESK: 16, DESKD: 17, LAMP: 18, SWHITE: 19 };
+const MESSE = [
+  [0, 23, 135, 150, MC.WALL],
+  [0, 23, 135, 40, MC.WALL2],
+  [0, 172, 135, 40, MC.CARPET],
+  [0, 172, 135, 2, MC.CARPETL],
+  [0, 27, 135, 2, MC.TRUSS],
+  [0, 34, 135, 2, MC.TRUSS],
+  [8, 36, 1, 20, MC.TRUSS],
+  [26, 36, 1, 20, MC.TRUSS],
+  [2, 56, 31, 20, MC.TV],
+  [4, 58, 27, 16, MC.SCR1],
+  [7, 61, 12, 2, MC.SWHITE],
+  [7, 65, 18, 1, MC.SWHITE],
+  [7, 68, 14, 1, MC.SWHITE],
+  [108, 36, 1, 20, MC.TRUSS],
+  [126, 36, 1, 20, MC.TRUSS],
+  [102, 56, 31, 20, MC.TV],
+  [104, 58, 27, 16, MC.SCR2],
+  [107, 68, 4, 4, MC.BAR1],
+  [113, 64, 4, 8, MC.BAR2],
+  [119, 61, 4, 11, MC.BAR3],
+  [125, 66, 4, 6, MC.BAR1],
+  [3, 170, 18, 3, MC.ALUD],
+  [5, 92, 14, 78, MC.BANNER],
+  [5, 96, 14, 6, MC.PINKV],
+  [5, 104, 14, 2, MC.BLUE],
+  [7, 112, 10, 1, MC.MARK],
+  [7, 115, 8, 1, MC.MARK],
+  [5, 150, 14, 14, MC.BLUE],
+  [112, 140, 23, 34, MC.DESK],
+  [112, 140, 23, 3, MC.DESKD],
+  [116, 120, 17, 13, MC.TV],
+  [117, 121, 15, 10, MC.SCR1],
+  [123, 133, 3, 5, MC.LAMP],
+  [119, 137, 11, 2, MC.LAMP],
+  [119, 124, 8, 1, MC.SWHITE],
+];
+const HDCY = 150;
+const PLH = [[4, 178], [20, 192], [106, 178], [122, 190], [40, 196]];
 const PL = [[4, 30], [118, 32], [6, 140], [120, 146], [8, 196]];
 const ST = [[20, 40], [60, 40], [100, 152], [30, 176]];
 const CIR = [[0, -10], [7, -7], [10, 0], [7, 7], [0, 10], [-7, 7], [-10, 0], [-7, -7]];
 const SPC = [
-  { ex: 10, ey: -6, mx: 22, my: 2, ml: 10, chx: 12, chy: 0, nx: 34, ny: 2, bx: 24, by: -2, hx: 6, hy: -24 },
-  { ex: 12, ey: -7, mx: 16, my: 4, ml: 10, chx: 21, chy: -1, nx: 29, ny: 3, bx: 10, by: -14, hx: 2, hy: -16 },
-  { ex: 28, ey: -6, mx: 30, my: 0, ml: 5, chx: 23, chy: -3, nx: 37, ny: -2, bx: 24, by: -8, hx: 36, hy: -6 }];
+  { ex: 10, ey: -6, mx: 22, my: 2, ml: 10, chx: 12, chy: 0, nx: 34, ny: 2, bx: 24, by: -2, hx: 6, hy: -24, ty: -30, qx: 36 },
+  { ex: 12, ey: -7, mx: 16, my: 4, ml: 10, chx: 21, chy: -1, nx: 29, ny: 3, bx: 10, by: -14, hx: 2, hy: -16, ty: -30, qx: 31 },
+  { ex: 28, ey: -6, mx: 30, my: 0, ml: 5, chx: 23, chy: -3, nx: 37, ny: -2, bx: 24, by: -8, hx: 36, hy: -6, ty: -30, qx: 39 },
+  { ex: 0, ey: -70, mx: 0, my: -56, ml: 8, chx: 0, chy: 0, nx: 0, ny: -56, bx: -2, by: -52, hx: 0, hy: 0, ty: -86, qx: 28 }];
 
 function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/text)
   const R = (x, y, w, h, c) => { if (w > 0 && h > 0) g.rect(x, y, w, h, c); };
@@ -326,7 +488,53 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     if (i % 2 === 0) { R(x + 1, y, 4, 2, C.CAP); R(x, y + 2, 6, 11, C.PLA); R(x, y + 6, 6, 2, C.CAP); }
     else { R(x, y, 10, 2, C.BAG); R(x + 1, y + 2, 8, 5, C.BAG); R(x, y + 7, 3, 3, C.BAG); R(x + 7, y + 7, 3, 3, C.BAG); }
   };
+  const HPAL = [C.HFUR, C.HFURD, C.HCREAM, C.HPINK, C.HPINKD, C.HVEST, C.HVESTD, C.REFL, C.EYE, C.WHITE, C.HMOUTH, C.HELM, C.HELMB, C.HELMS, C.CASE, C.ALU, C.ALUD, C.GAFFA, C.MARK, C.WHEEL];
+  const hcol = (k, sk, dead) => {
+    if (dead && k === HC.FUR) return C.DEAD;
+    if (dead && (k === HC.FURD || k === HC.PINK || k === HC.PINKD)) return C.DEADFIN;
+    if (sk && k === HC.FUR) return C.HFURS;
+    if (sk && k === HC.FURD) return C.HFURSD;
+    return HPAL[k];
+  };
+  const MPAL = [C.MWALL, C.MWALL2, C.CARPET, C.CARPETL, C.TRUSS, C.TV, C.SCR1, C.SCR2, C.OK, C.SEL, C.LOW, C.BANNER, C.HVEST, C.SCR1, C.MARK, C.ALUD, C.DESK, C.DESKD, C.LAMP, C.WHITE];
+  function drawMesse(off) {
+    for (const m of MESSE) { const k = m[4], scr = k === MC.SCR1 || k === MC.SCR2 || k === MC.BAR1 || k === MC.BAR2 || k === MC.BAR3 || k === MC.SWHITE; R(m[0], m[1], m[2], m[3], (off && scr) ? C.TV : MPAL[k]); }
+    for (let i = 0; i < 17; i++) { R(i * 8, 29, 1, 5, C.TRUSS); R(i * 8 + 2, 30, 1, 1, C.TRUSS); R(i * 8 + 4, 31, 1, 1, C.TRUSS); R(i * 8 + 6, 32, 1, 1, C.TRUSS); }
+    const lx = [24, 67, 110], lc = [C.WARM, C.MAG, C.CYAN];
+    for (let i = 0; i < 3; i++) {
+      const x = lx[i], c = off ? C.LAMP : lc[i];
+      R(x - 1, 36, 3, 3, C.LAMP); R(x - 6, 39, 12, 2, C.LAMP); R(x - 6, 39, 2, 9, C.LAMP); R(x + 4, 39, 2, 9, C.LAMP); R(x - 4, 42, 8, 8, C.LAMP); R(x - 3, 49, 6, 2, c);
+      if (!off) { R(x - 1, 53, 2, 1, c); R(x - 2, 57, 1, 1, c); R(x + 1, 61, 1, 1, c); }
+    }
+  }
+  const mug = (x, y, ap) => {
+    R(x, y, 9, 10, C.WHITE); R(x + 1, y + 1, 7, 2, C.COFFEE); R(x + 9, y + 2, 3, 1, C.WHITE); R(x + 11, y + 2, 1, 5, C.WHITE); R(x + 9, y + 6, 3, 1, C.WHITE);
+    for (let i = 0; i < 3; i++) R(x + 2 + i * 3, y - 3 - ((dv(ap, 120) + i) % 4), 1, 2, C.DESKD);
+  };
+  function hamster(cx, cy, mo, sk, dead, t, an, full) {
+    gcx = cx; gcy = cy;
+    for (const e of HAM) SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead));
+    if (full) { T('Medien', cx + sc(-5) - 18, cy + sc(8), 1, C.MARK); T('Hamster', cx + sc(-5) - 21, cy + sc(16), 1, C.MARK); }
+    const blink = (t % 3200) < 140, E = C.EYE, fur = hcol(HC.FUR, sk, dead);
+    if (mo === M.DEAD) { for (let i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
+    else if (an === A.DIZZY) { for (let e = 0; e < 2; e++) { const o = e * 19; SR(-14 + o, -71, 9, 9, E); SR(-12 + o, -69, 5, 5, fur); SR(-11 + o, -68, 3, 3, E); } }
+    else if (an === A.STARTLE) { SR(-14, -72, 9, 10, E); SR(5, -72, 9, 10, E); SR(-13, -71, 3, 3, C.WHITE); SR(6, -71, 3, 3, C.WHITE); }
+    else if (mo === M.SLEEP || blink) { SR(-13, -66, 7, 2, E); SR(6, -66, 7, 2, E); }
+    else { SR(-13, -70, 7, 8, E); SR(6, -70, 7, 8, E); SR(-12, -69, 3, 3, C.WHITE); SR(7, -69, 3, 3, C.WHITE); SR(-9, -65, 1, 1, C.WHITE); SR(10, -65, 1, 1, C.WHITE); }
+    if (mo === M.SAD && !blink && an === A.NONE) SR(-11, -62, 2, 3, C.BUBBLE);
+    const Mo = C.HMOUTH;
+    if (an === A.STARTLE) SR(-2, -57, 4, 3, Mo);
+    else if (mo === M.HAPPY || mo === M.OK) { SR(-5, -56, 4, 1, Mo); SR(1, -56, 4, 1, Mo); SR(-1, -57, 2, 1, Mo); if (mo === M.HAPPY) { SR(-19, -61, 5, 2, C.HPINK); SR(14, -61, 5, 2, C.HPINK); } }
+    else if (mo === M.SAD) { SR(-4, -55, 8, 1, Mo); SR(-5, -54, 1, 1, Mo); SR(4, -54, 1, 1, Mo); }
+    else if (mo === M.SICK) { SR(-4, -55, 3, 1, Mo); SR(-1, -56, 3, 1, Mo); SR(2, -55, 3, 1, Mo); }
+    else if (mo === M.SLEEP) SR(-2, -56, 4, 1, Mo);
+    else SR(-4, -55, 8, 1, Mo);
+    if (!full) return;
+    if (sk) { SR(-46, -86, 2, 8, C.LOW); SR(-49, -83, 8, 2, C.LOW); }
+    if (mo === M.SLEEP && an !== A.SLEEP) { const z = (Math.floor(t / 700) % 2) === 1; T(z ? 'Z' : 'z', cx + sc(26), cy + sc(-86) + (z ? 0 : 4), 2, C.TXT); }
+  }
   function drawPet(S, sp, cx, cy, mo, sk, dead, t, an, ap, full) {
+    if (sp === 3) { hamster(cx, cy, mo, sk, dead, t, an, full); return; }
     gcx = cx; gcy = cy;
     const P = SPC[sp];
     let mc = C.EYE, eb;
@@ -380,7 +588,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     if (mo === M.SLEEP && an !== A.SLEEP) { const z = (Math.floor(t / 700) % 2) === 1; T(z ? 'Z' : 'z', cx + sc(34), cy + sc(-30) + (z ? 0 : 4), 2, C.TXT); }
   }
   function drawHeader(S) {
-    const vals = [S.hunger, S.fun, S.energy], labs = [I.FORK, I.PAD, I.BOLT], lcol = [C.FOOD, C.PLAY, C.SEL];
+    const vals = [S.hunger, S.fun, S.energy], labs = [S.species === 3 ? I.CUP : I.FORK, S.species === 3 ? I.CIG : I.PAD, I.BOLT], lcol = [C.FOOD, C.PLAY, C.SEL];
     for (let i = 0; i < 3; i++) {
       const x0 = 2 + i * 44, id = labs[i];
       iconK(id, x0 + dv(18 - kW(id, 3, 2), 2), 2 + dv(14 - kH(id, 3, 2), 2), 3, 2, lcol[i]);
@@ -394,7 +602,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   }
   function drawMenu(S, an, sk) {
     if (S.dead) { const x = dv(W - 44, 2); R(x, MENUY, 44, 22, C.SEL); iconK(I.HEART, x + dv(44 - kW(I.HEART, 3, 2), 2), MENUY + dv(22 - kH(I.HEART, 3, 2), 2), 3, 2, C.BG); return; }
-    const ids = [I.FORK, I.PAD, S.sleeping ? I.SUN : I.MOON, I.ROD, I.KIT], cols = [C.FOOD, C.PLAY, C.SEL, C.OK, C.CHEEK];
+    const ids = [S.species === 3 ? I.CUP : I.FORK, S.species === 3 ? I.CIG : I.PAD, S.sleeping ? I.SUN : I.MOON, I.ROD, I.KIT], cols = [C.FOOD, C.PLAY, C.SEL, C.OK, C.CHEEK];
     for (let i = 0; i < 5; i++) {
       const x = 1 + i * 27, id = ids[i], sel = S.menu === i;
       const warn = (i === 3 && S.plastic + (an === A.FISH ? 1 : 0) >= 3) || (i === 4 && sk);
@@ -405,68 +613,85 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   }
   function drawGame(S, t) {
     let mo = mood(S);
+    const ham = S.species === 3;
     const bg = S.sleeping ? C.BGS : (isNight(S) ? C.BGN : C.BG);
     R(0, 0, W, H, bg);
+    if (ham) drawMesse(S.sleeping);
     drawHeader(S);
-    for (let i = 0; i < S.plastic; i++) drawPlastic(i, PL[i][0], PL[i][1] + ((Math.floor(t / 600) + i) % 2));
+    const pl = ham ? PLH : PL;
+    for (let i = 0; i < S.plastic; i++) drawPlastic(i, pl[i][0], pl[i][1] + ((Math.floor(t / 600) + i) % 2));
     const ap = Math.floor(t - S.animStart), an = (S.anim && ap >= 0 && ap < 1200) ? S.anim : A.NONE;
     if (an === A.FISH) {
-      const i = S.animArg, sx = PL[i][0], sy = PL[i][1], d = sy - 4 - WTOP;
+      const i = S.animArg, sx = pl[i][0], sy = pl[i][1], d = sy - 4 - WTOP;
       const ly = ap < 500 ? WTOP + dv(d * ap, 500) : sy - 4 - dv(d * (ap - 500), 700);
       R(sx + 4, WTOP, 1, ly - WTOP + 3, C.TXT); R(sx + 1, ly + 3, 4, 1, C.TXT); R(sx + 1, ly + 1, 1, 2, C.TXT);
       drawPlastic(i, sx, ap < 500 ? sy : ly + 4);
-    } else if (an === A.WAVES) {
+    } else if (an === A.WAVES && !ham) {
       for (let r = 0; r < 2; r++) for (let k = 0; k < 16; k++) R((k * 16 + dv(ap, 20)) % 256 - 16, 40 + r * 110 + ((k + r) % 2) * 2, 8, 2, C.BUBBLE);
     }
     let jy = 0, dx = 0;
-    if (an === A.PLAY) jy = -dv(ap * (1200 - ap), 24000);
+    if (an === A.PLAY) jy = ham ? 0 : -dv(ap * (1200 - ap), 24000);
     else if (an === A.WAKE) jy = -dv(ap * (1200 - ap), 60000);
-    else if (an === A.WAVES) jy = -((dv(ap, 150) % 2) * 3);
+    else if (an === A.WAVES) jy = ham ? 0 : -((dv(ap, 150) % 2) * 3);
     else if (an === A.STARTLE) jy = ap < 200 ? -dv(ap, 20) : (ap < 600 ? -10 : -dv(1200 - ap, 60));
-    if (an === A.DIZZY) dx = (dv(ap, 60) % 2) * 4 - 2;
-    gkn = 5; gkd = 4;
-    const cx = DCX + dx, bob = (!S.sleeping && !S.dead && (Math.floor(t / 500) % 2) === 1) ? 2 : 0, cy = DCY + bob + jy;
+    if (an === A.DIZZY) dx = ham ? (dv(ap, 60) % 2) * 10 - 5 : (dv(ap, 60) % 2) * 4 - 2;
+    else if (an === A.WAVES && ham) dx = (dv(ap, 120) % 2) * 6 - 3;
+    if (ham) { gkn = 1; gkd = 1; } else { gkn = 5; gkd = 4; }
+    const cx = DCX + dx, bob = (!ham && !S.sleeping && !S.dead && (Math.floor(t / 500) % 2) === 1) ? 2 : 0, cy = (ham ? HDCY : DCY) + bob + jy;
     const pend = an === A.MEDIC && ap < 500;
     if (pend && mo !== M.SLEEP) mo = M.SICK;
     const sk = (S.sick || pend) && !S.dead;
     drawPet(S, S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
     const P = SPC[S.species];
     if (an === A.FEED) {
-      if (ap < 600) {
+      if (ham) {
+        const tx = cx + sc(P.nx) - 4, ty = cy + sc(P.ny) - 4;
+        if (ap < 600) mug(FOODX + dv((tx - FOODX) * ap, 600), FOODY + dv((ty - FOODY) * ap, 600), ap); else mug(tx, ty + dv(ap, 200) % 2, ap);
+      } else if (ap < 600) {
         const f = S.animArg ? I.COOKIE : I.WIENER, tx = cx + sc(P.nx), ty = cy + sc(P.ny) - dv(kH(f, 3, 2), 2);
         iconK(f, FOODX + dv((tx - FOODX) * ap, 600), FOODY + dv((ty - FOODY) * ap, 600), 3, 2, S.animArg ? C.COOKIE : C.WIENER);
       }
     } else if (an === A.PLAY) {
-      const bb = dv((ap % 400) * (400 - ap % 400), 4000);
-      iconK(I.BALL, cx + sc(P.bx) - 2, cy + sc(P.by) - kH(I.BALL, 3, 2) - bb, 3, 2, C.LOW);
-      if (ap > 900) { const sp = dv(ap - 900, 15); for (let i = 0; i < 5; i++) R(cx + sc(-34) + i * 20, cy + sc(16) + 6 - sp - (i % 2) * 4, 3, 3, C.BUBBLE); }
+      if (ham) {
+        const mx = cx + sc(3), my = cy + sc(-56);
+        R(mx, my, 3, 2, C.FILTER); R(mx + 3, my, 10, 2, C.WHITE); R(mx + 13, my, 2, 2, (dv(ap, 150) % 2) ? C.EMBER : C.LOW);
+        for (let i = 0; i < 4; i++) { const k = (dv(ap, 8) + i * 12) % 36; R(mx + 14 + ((dv(k, 6) + i) % 2) * 2, my - 3 - k, 2, 2, C.DESKD); }
+      } else {
+        const bb = dv((ap % 400) * (400 - ap % 400), 4000);
+        iconK(I.BALL, cx + sc(P.bx) - 2, cy + sc(P.by) - kH(I.BALL, 3, 2) - bb, 3, 2, C.LOW);
+        if (ap > 900) { const sp = dv(ap - 900, 15); for (let i = 0; i < 5; i++) R(cx + sc(-34) + i * 20, cy + sc(16) + 6 - sp - (i % 2) * 4, 3, 3, C.BUBBLE); }
+      }
     } else if (an === A.SLEEP) {
-      const my = cy + sc(-30);
+      const my = cy + sc(P.ty);
       iconK(I.MOON, cx + sc(20), ap < 600 ? -16 + dv((my + 16) * ap, 600) : my, 3, 2, C.SEL);
       for (let i = 0; i < 4; i++) if ((dv(ap, 200) + i) % 2 === 0) { R(ST[i][0] - 2, ST[i][1], 5, 1, C.SEL); R(ST[i][0], ST[i][1] - 2, 1, 5, C.SEL); }
     } else if (an === A.WAKE) {
-      iconK(I.SUN, cx + sc(26), cy + sc(-16) - dv(20 * ap, 1200), 3, 2, C.SEL);
+      iconK(I.SUN, cx + sc(26), cy + sc(P.ty + 14) - dv(20 * ap, 1200), 3, 2, C.SEL);
     } else if (an === A.MEDIC) {
       if (ap < 500) { const px = cx + sc(P.bx + 2), pe = cy + sc(P.by - 4) - 5, py = WTOP + dv((pe - WTOP) * ap, 500); R(px, py, 5, 5, C.LOW); R(px + 5, py, 5, 5, C.TXT); }
-      else for (let i = 0; i < 4; i++) { const x = cx + sc(-40 + i * 26), y = cy + sc(-12) - dv(ap - 500, 30) - (i % 2) * 8; R(x - 2, y, 5, 1, C.OK); R(x, y - 2, 1, 5, C.OK); }
+      else for (let i = 0; i < 4; i++) { const x = cx + sc(-40 + i * 26), y = cy + sc(P.ty + 18) - dv(ap - 500, 30) - (i % 2) * 8; R(x - 2, y, 5, 1, C.OK); R(x, y - 2, 1, 5, C.OK); }
     } else if (an === A.NEW) {
-      for (let i = 0; i < 3; i++) iconK(I.HEART, cx + sc(-34 + i * 30), cy + sc(-30) - dv(ap, 40) + (i % 2) * 6, 3, 2, C.CHEEK);
+      for (let i = 0; i < 3; i++) iconK(I.HEART, cx + sc(-34 + i * 30), cy + sc(P.ty) - dv(ap, 40) + (i % 2) * 6, 3, 2, C.CHEEK);
     } else if (an === A.DIZZY) {
-      for (let i = 0; i < 3; i++) { const k = (dv(ap, 100) + i * 3) % 8, x = cx + sc(P.ex - 6) + CIR[k][0] * 2, y = cy + sc(-30) - 6 + dv(CIR[k][1], 2); R(x - 2, y, 5, 1, C.SEL); R(x, y - 2, 1, 5, C.SEL); }
+      for (let i = 0; i < 3; i++) { const k = (dv(ap, 100) + i * 3) % 8, x = cx + sc(P.ex - 6) + CIR[k][0] * 2, y = cy + sc(P.ty) - 6 + dv(CIR[k][1], 2); R(x - 2, y, 5, 1, C.SEL); R(x, y - 2, 1, 5, C.SEL); }
     } else if (an === A.STARTLE) {
-      const x = cx + sc(P.nx + 2), y = cy + sc(-20); R(x, y, 3, 10, C.LOW); R(x, y + 12, 3, 3, C.LOW);
+      const x = cx + sc(P.qx), y = cy + sc(P.ty + 10); R(x, y, 3, 10, C.LOW); R(x, y + 12, 3, 3, C.LOW);
     }
+    const ix = ham ? 116 : INFX, iy = ham ? 99 : INFY;
     if (an === A.NONE && t < S.msgUntil && S.msgIcon >= 0) {
-      const id = S.msgIcon, x = INFX - icW(id), y = INFY - icH(id);
+      const id = S.msgIcon, x = ix - icW(id), y = iy - icH(id);
       icon(id, x, y, 2, C.TXT);
       if (S.msgNo) iconNo(id, x, y, 2);
     }
-    const name = NAMES[S.species], nw = tw(name, 2) + 4;
-    R(CORNX - nw + 1, NAMEY, nw - 2, 18, C.SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C.SEL);
-    T(name, CORNX - nw + 3, NAMEY + 2, 2, C.BG);
+    if (!ham) {
+      const name = NAMES[S.species], nw = tw(name, 2) + 4;
+      R(CORNX - nw + 1, NAMEY, nw - 2, 18, C.SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C.SEL);
+      T(name, CORNX - nw + 3, NAMEY + 2, 2, C.BG);
+    }
     if (!S.dead) {
-      const buf = String(Math.floor(S.age / 60)), cw = kW(I.CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2;
-      iconK(I.CLOCK, ax, AGEY + 3, 3, 2, C.DIM); T(buf, ax + cw + 3, AGEY, 2, C.DIM);
+      const buf = String(Math.floor(S.age / 60));
+      if (ham) { const ax = CORNX - tw(buf, 1) - 9; icon(I.CLOCK, ax, 204, 1, C.DIM); T(buf, ax + 9, 204, 1, C.DIM); }
+      else { const cw = kW(I.CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2; iconK(I.CLOCK, ax, AGEY + 3, 3, 2, C.DIM); T(buf, ax + cw + 3, AGEY, 2, C.DIM); }
     }
     drawMenu(S, an, sk);
   }
@@ -481,7 +706,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       R(3, y, 129, 24, sel ? C.SEL : C.PANEL);
       if (r === 0) T('Neu', 8, y + 5, 2, fg);
       else iconK(ids[r], 8 + dv(20 - kW(ids[r], 3, 2), 2), y + dv(24 - kH(ids[r], 3, 2), 2), 3, 2, fg);
-      if (r === 0) { gkn = 1; gkd = 4; drawPet(S, S.species, 104, y + 14, M.HAPPY, false, false, t, A.NONE, 0, false); }
+      if (r === 0) { if (S.species === 3) { gkn = 1; gkd = 6; drawPet(S, 3, 104, y + 17, M.HAPPY, false, false, t, A.NONE, 0, false); } else { gkn = 1; gkd = 4; drawPet(S, S.species, 104, y + 14, M.HAPPY, false, false, t, A.NONE, 0, false); } }
       else if (r === 1) { const v = S.speed === 0 ? '1x' : (S.speed === 1 ? '10x' : '50x'); T(v, 128 - tw(v, 2), y + 4, 2, fg); }
       else if (r === 2 || r === 3) { const n = r === 2 ? S.vol : S.sens; if (n === 0) iconK(I.CROSSX, 110, y + 7, 3, 2, sel ? C.BG : C.LOW); else drawBars(105, y + 5, n, fg, sel ? C.FIN : C.DIM); }
       else if (r === 4) {
@@ -496,13 +721,14 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   }
   function drawPicker(S, t) {
     R(0, 0, W, H, C.BGS);
-    for (let r = 0; r < 3; r++) {
-      const y = 6 + r * 56, sel = S.uiSel === r;
-      R(3, y, 129, 52, sel ? C.SEL : C.PANEL);
-      gkn = 1; gkd = 2; drawPet(S, r, INFX, y + 22, M.HAPPY, false, false, t, A.NONE, 0, false);
-      T(NAMES[r], INFX - dv(tw(NAMES[r], 1), 2), y + 41, 1, sel ? C.BG : C.TXT);
+    for (let r = 0; r < 4; r++) {
+      const y = 4 + r * 48, sel = S.uiSel === r;
+      R(3, y, 129, 46, sel ? C.SEL : C.PANEL);
+      if (r === 3) { gkn = 1; gkd = 4; drawPet(S, r, INFX, y + 26, M.HAPPY, false, false, t, A.NONE, 0, false); }
+      else { gkn = 1; gkd = 2; drawPet(S, r, INFX, y + 18, M.HAPPY, false, false, t, A.NONE, 0, false); }
+      T(NAMES[r], INFX - dv(tw(NAMES[r], 1), 2), y + 37, 1, sel ? C.BG : C.TXT);
     }
-    backRow(6 + 3 * 56, S.uiSel === 3);
+    backRow(4 + 4 * 48, S.uiSel === 4);
   }
   function drawWifi(S, t) {
     R(0, 0, W, H, C.BGS);

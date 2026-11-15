@@ -29,7 +29,41 @@ static const uint16_t C_BG = rgb(0x0b, 0x3a, 0x5c), C_BGS = rgb(0x05, 0x1c, 0x2e
   C_BALLBG = rgb(0x1c, 0x12, 0x30), C_BALLWIN = rgb(0x1a, 0x2f, 0x8a), C_HELM = rgb(0x22, 0x24, 0x2a), C_HELMB = rgb(0x48, 0x4c, 0x58), C_HELMS = rgb(0x7a, 0x80, 0x90), C_HAIR = rgb(0x3a, 0x1f, 0x2e),
   C_SKINF = rgb(0xe8, 0xb8, 0x8c), C_SHADOW = rgb(0x9b, 0x5f, 0xd0), C_LIPS = rgb(0xd0, 0x2a, 0x4a), C_GOLD = rgb(0xf2, 0xc1, 0x4e),
   C_BLOUSE = rgb(0x7b, 0x3f, 0xa0), C_VEST = rgb(0xff, 0x7a, 0x1a), C_VESTY = rgb(0xe6, 0xf2, 0x2a), C_REFL = rgb(0xd8, 0xe0, 0xe8), C_CLOTH = rgb(0x5a, 0x14, 0x2a),
-  C_ORB = rgb(0x9f, 0xa8, 0xff), C_ORB2 = rgb(0xd8, 0xc8, 0xff), C_GLOVE = rgb(0x8a, 0x8f, 0x9c), C_GLOVE2 = rgb(0x5c, 0x61, 0x6e);
+  C_ORB = rgb(0x9f, 0xa8, 0xff), C_ORB2 = rgb(0xd8, 0xc8, 0xff), C_GLOVE = rgb(0x8a, 0x8f, 0x9c), C_GLOVE2 = rgb(0x5c, 0x61, 0x6e),
+  C_HFUR = rgb(0xe8, 0xa0, 0x5a),
+  C_HFURD = rgb(0xc9, 0x80, 0x40),
+  C_HCREAM = rgb(0xf8, 0xe4, 0xc4),
+  C_HPINK = rgb(0xff, 0x9f, 0xb3),
+  C_HPINKD = rgb(0xf0, 0x6f, 0x8a),
+  C_HVEST = rgb(0xff, 0x5f, 0xa8),
+  C_HVESTD = rgb(0xd8, 0x3f, 0x88),
+  C_HMOUTH = rgb(0x6a, 0x3a, 0x2a),
+  C_HFURS = rgb(0xc8, 0xc0, 0x80),
+  C_HFURSD = rgb(0xa8, 0xa0, 0x60),
+  C_CASE = rgb(0x1e, 0x20, 0x26),
+  C_ALU = rgb(0xc4, 0xcc, 0xd6),
+  C_ALUD = rgb(0x8e, 0x96, 0xa2),
+  C_GAFFA = rgb(0xd6, 0xd4, 0xc8),
+  C_MARK = rgb(0x2a, 0x2a, 0x30),
+  C_WHEEL = rgb(0x2a, 0x6a, 0xe0),
+  C_MWALL = rgb(0x1a, 0x1f, 0x2e),
+  C_MWALL2 = rgb(0x22, 0x28, 0x3a),
+  C_CARPET = rgb(0x3a, 0x44, 0x5a),
+  C_CARPETL = rgb(0x55, 0x60, 0x78),
+  C_TRUSS = rgb(0xb0, 0xb8, 0xc4),
+  C_LAMP = rgb(0x16, 0x16, 0x1a),
+  C_WARM = rgb(0xff, 0xe0, 0x9a),
+  C_MAG = rgb(0xff, 0x5f, 0xd0),
+  C_CYAN = rgb(0x5f, 0xe8, 0xff),
+  C_TV = rgb(0x0c, 0x0c, 0x10),
+  C_SCR1 = rgb(0x1f, 0x6f, 0xc8),
+  C_SCR2 = rgb(0x14, 0x22, 0x3a),
+  C_BANNER = rgb(0xf2, 0xf4, 0xf8),
+  C_DESK = rgb(0xe6, 0xe8, 0xee),
+  C_DESKD = rgb(0xb8, 0xbc, 0xc8),
+  C_COFFEE = rgb(0x6b, 0x3e, 0x1f),
+  C_FILTER = rgb(0xe0, 0xa0, 0x50),
+  C_EMBER = rgb(0xff, 0x6a, 0x2a);
 
 struct Tama {
   float hunger, fun, energy, health;
@@ -59,7 +93,7 @@ static Tama S;
 static M5Canvas cv(&M5.Display);
 static Preferences prefs;
 // Pixel-Icons ('#' = Pixel)
-enum { I_FORK, I_PAD, I_MOON, I_SUN, I_ROD, I_KIT, I_HEART, I_BOLT, I_CLOCK, I_BALL, I_WIENER, I_COOKIE, I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_BACK, I_CHECK, I_CROSSX };
+enum { I_FORK, I_PAD, I_MOON, I_SUN, I_ROD, I_KIT, I_HEART, I_BOLT, I_CLOCK, I_BALL, I_WIENER, I_COOKIE, I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_BACK, I_CHECK, I_CROSSX, I_CUP, I_CIG };
 static const char* const IC_FORK[] = { "#.#.#...##.", "#.#.#..###.", "#.#.#..###.", "#####..###.", ".###...###.", "..#.....#..", "..#.....#..", "..#.....#..", "..#.....#..", nullptr };
 static const char* const IC_PAD[] = { "..########..", ".##########.", "###.####.###", "##...##.#.##", "###.####.###", "############", "####....####", ".##......##.", nullptr };
 static const char* const IC_MOON[] = { "....###.####", "..####....#.", ".####....#..", ".####...####", ".####.......", ".#####...##.", "..########..", "....####....", nullptr };
@@ -82,12 +116,14 @@ static const char* const IC_DL[] = { "...###...", "...###...", "...###...", "###
 static const char* const IC_BACK[] = { "...#.....", "..##.....", ".########", "#########", ".########", "..##.....", "...#.....", nullptr };
 static const char* const IC_CHECK[] = { "........#", ".......##", "#.....##.", "##...##..", ".##.##...", "..###....", "...#.....", nullptr };
 static const char* const IC_CROSSX[] = { "#.....#", ".#...#.", "..#.#..", "...#...", "..#.#..", ".#...#.", "#.....#", nullptr };
+static const char* const IC_CUP[] = { "..#..#.....", ".#..#......", "..#..#.....", "########...", "#########..", "########.#.", "#########..", ".######....", "..####.....", nullptr };
+static const char* const IC_CIG[] = { "........#.#.", ".........#..", "........#...", "############", "############", nullptr };
 static const char* const* const ICONS[] = { IC_FORK, IC_PAD, IC_MOON, IC_SUN, IC_ROD, IC_KIT, IC_HEART, IC_BOLT, IC_CLOCK, IC_BALL, IC_WIENER, IC_COOKIE,
-  IC_NEWG, IC_FAST, IC_SPK, IC_WAVE, IC_BATT, IC_WIFI, IC_DL, IC_BACK, IC_CHECK, IC_CROSSX };
+  IC_NEWG, IC_FAST, IC_SPK, IC_WAVE, IC_BATT, IC_WIFI, IC_DL, IC_BACK, IC_CHECK, IC_CROSSX, IC_CUP, IC_CIG };
 static int icW(int id) { return (int)strlen(ICONS[id][0]); }
 static int icH(int id) { int n = 0; while (ICONS[id][n]) n++; return n; }
 
-static const char* const NAMES[3] = { "Delfino", "Orki", "Schildi" };
+static const char* const NAMES[4] = { "Delfino", "Orki", "Schildi", "Medien Hamster" };
 
 static void newEgg(uint32_t seed) {
   S.hunger = 80; S.fun = 80; S.energy = 80; S.health = 100; S.age = 0; S.seed = seed ? seed : 12345;
@@ -147,13 +183,13 @@ static void gStep() {   // genau 1 Spielsekunde
 static void gFeed(int32_t t) {
   if (S.dead) return;
   if (S.sleeping) { say(t, I_MOON); return; }
-  if (S.hunger > 90) { say(t, I_FORK, true); return; }
+  if (S.hunger > 90) { say(t, S.species == 3 ? I_CUP : I_FORK, true); return; }
   S.hunger = clamp100(S.hunger + 25); say(t, I_HEART); anim(t, A_FEED, (int)(S.age % 2));
 }
 static void gPlay(int32_t t) {
   if (S.dead) return;
   if (S.sleeping) { say(t, I_MOON); return; }
-  if (S.sick) { say(t, I_PAD, true); return; }
+  if (S.sick) { say(t, S.species == 3 ? I_CIG : I_PAD, true); return; }
   if (S.energy < 15) { say(t, I_BOLT, true); return; }
   S.fun = clamp100(S.fun + 20); S.energy = clamp100(S.energy - 8); S.hunger = clamp100(S.hunger - 5); say(t, I_HEART); anim(t, A_PLAY);
 }
@@ -182,6 +218,7 @@ static void gShake(int32_t t, int lvl) {   // 1 = sanft, 2 = wild
 static void catchUp(uint32_t target) {      // Stick war aus: das Tier hat geschlafen, Zeit lief 10x langsamer
   if (target <= S.now) return;
   uint32_t n = (target - S.now) / 10; if (n > 60480) n = 60480;   // hoechstens eine Woche
+  if (n == 0) { S.now = target; return; }                        // kaum Zeit vergangen: nichts aendern
   for (uint32_t i = 0; i < n && !S.dead; i++) { S.now += 10; S.sleeping = true; gStep(); }
   S.now = target;
   if (!S.dead && !isNight() && S.energy >= 50) S.sleeping = false;
@@ -233,7 +270,7 @@ static void pressLong() {     // Taste B lang: Einstellungen auf/zu
 static void pressNext() {
   if (S.ui == 1) S.uiSel = (S.uiSel + 1) % (SET_N + 1);   // nach "Zurueck" kommt der versteckte Platz
   else if (S.ui == 5) { S.ui = 1; S.uiSel = SET_N; }
-  else if (S.ui == 2) S.uiSel = (S.uiSel + 1) % 4;
+  else if (S.ui == 2) S.uiSel = (S.uiSel + 1) % 5;
   else if (S.ui == 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
 static void pressOk(int32_t t) {
@@ -248,7 +285,7 @@ static void pressOk(int32_t t) {
     else if (S.uiSel == SET_N) { S.ui = 5; S.ballAns = -1; }
     return;
   }
-  if (S.ui == 2) { if (S.uiSel == 3) { S.ui = 1; S.uiSel = 0; } else { newGame(t, S.uiSel); S.ui = 0; } return; }
+  if (S.ui == 2) { if (S.uiSel == 4) { S.ui = 1; S.uiSel = 0; } else { newGame(t, S.uiSel); S.ui = 0; } return; }
   if (S.ui == 5) { gBall(t); return; }
   if (S.ui >= 3) { S.ui = 1; return; }
   if (S.dead) { newGame(t, S.species); return; }
@@ -291,11 +328,12 @@ static const int PL[5][2] = { { 4, 30 }, { 118, 32 }, { 6, 140 }, { 120, 146 }, 
 static const int ST[4][2] = { { 20, 40 }, { 60, 40 }, { 100, 152 }, { 30, 176 } };
 static const int CIR[8][2] = { { 0, -10 }, { 7, -7 }, { 10, 0 }, { 7, 7 }, { 0, 10 }, { -7, 7 }, { -10, 0 }, { -7, -7 } };
 // Gesichter der Tiere: Auge, Mund (Start, Laenge), Wange, Nase (Futterziel), Kopf oben (Ball), Atemblasen
-struct Spec { int ex, ey, mx, my, ml, chx, chy, nx, ny, bx, by, hx, hy; };
-static const Spec SPC[3] = {
-  { 10, -6, 22, 2, 10, 12, 0, 34, 2, 24, -2, 6, -24 },      // Delfin
-  { 12, -7, 16, 4, 10, 21, -1, 29, 3, 10, -14, 2, -16 },    // Orca
-  { 28, -6, 30, 0, 5, 23, -3, 37, -2, 24, -8, 36, -6 } };   // Schildkroete
+struct Spec { int ex, ey, mx, my, ml, chx, chy, nx, ny, bx, by, hx, hy, ty, qx; };   // ty: Kopf oben, qx: Ausrufezeichen
+static const Spec SPC[4] = {
+  { 10, -6, 22, 2, 10, 12, 0, 34, 2, 24, -2, 6, -24, -30, 36 },      // Delfin
+  { 12, -7, 16, 4, 10, 21, -1, 29, 3, 10, -14, 2, -16, -30, 31 },    // Orca
+  { 28, -6, 30, 0, 5, 23, -3, 37, -2, 24, -8, 36, -6, -30, 39 },     // Schildkroete
+  { 0, -70, 0, -56, 8, 0, 0, 0, -56, -2, -52, 0, 0, -86, 28 } };     // Medien Hamster
 static void drawPlastic(int i, int x, int y) {
   if (i % 2 == 0) { R(x + 1, y, 4, 2, C_CAP); R(x, y + 2, 6, 11, C_PLA); R(x, y + 6, 6, 2, C_CAP); }
   else { R(x, y, 10, 2, C_BAG); R(x + 1, y + 2, 8, 5, C_BAG); R(x, y + 7, 3, 3, C_BAG); R(x + 7, y + 7, 3, 3, C_BAG); }
@@ -304,7 +342,183 @@ static int gkn = 5, gkd = 4, gcx, gcy;   // Vergroesserung und Mitte des Tiers
 static int sc(int v) { int p = v * gkn; return p >= 0 ? p / gkd : -((-p + gkd - 1) / gkd); }   // abrunden
 static void SR(int dx, int dy, int w, int h, uint16_t c) { int x0 = sc(dx), y0 = sc(dy); R(gcx + x0, gcy + y0, sc(dx + w) - x0, sc(dy + h) - y0, c); }
 
+// ---- Medien Hamster (Tier 3) und sein Messestand: Tabellen { x, y, Breite, Hoehe, Farbe } ----
+enum { HC_FUR, HC_FURD, HC_CREAM, HC_PINK, HC_PINKD, HC_VEST, HC_VESTD, HC_REFL, HC_EYE, HC_WHITE, HC_MOUTH, HC_HELM, HC_HELMB, HC_HELMS, HC_CASE, HC_ALU, HC_ALUD, HC_GAFFA, HC_MARK, HC_WHEEL };
+static const int16_t HAM[][5] = {
+  { -31, 28, 6, 3, HC_ALUD },
+  { 25, 28, 6, 3, HC_ALUD },
+  { -32, 31, 8, 6, HC_WHEEL },
+  { -31, 30, 6, 8, HC_WHEEL },
+  { -29, 33, 2, 2, HC_ALU },
+  { 24, 31, 8, 6, HC_WHEEL },
+  { 25, 30, 6, 8, HC_WHEEL },
+  { 27, 33, 2, 2, HC_ALU },
+  { -34, 2, 68, 26, HC_CASE },
+  { -34, 2, 68, 2, HC_ALU },
+  { -34, 26, 68, 2, HC_ALU },
+  { -34, 2, 2, 26, HC_ALU },
+  { 32, 2, 2, 26, HC_ALU },
+  { -35, 1, 5, 5, HC_ALUD },
+  { 30, 1, 5, 5, HC_ALUD },
+  { -35, 24, 5, 5, HC_ALUD },
+  { -28, 6, 46, 18, HC_GAFFA },
+  { 14, 12, 10, 6, HC_ALU },
+  { 16, 14, 6, 2, HC_ALUD },
+  { 30, 24, 5, 5, HC_ALUD },
+  { -17, -52, 34, 2, HC_FUR },
+  { -21, -50, 42, 2, HC_FUR },
+  { -24, -48, 48, 4, HC_FUR },
+  { -26, -44, 52, 30, HC_FUR },
+  { -27, -14, 54, 8, HC_FUR },
+  { -25, -6, 50, 5, HC_FUR },
+  { -30, -44, 6, 16, HC_FUR },
+  { 24, -44, 6, 16, HC_FUR },
+  { -30, -30, 6, 3, HC_FURD },
+  { 24, -30, 6, 3, HC_FURD },
+  { -22, -50, 12, 2, HC_VEST },
+  { 10, -50, 12, 2, HC_VEST },
+  { -24, -48, 18, 38, HC_VEST },
+  { 6, -48, 18, 38, HC_VEST },
+  { -6, -42, 12, 32, HC_VEST },
+  { -6, -50, 12, 4, HC_CREAM },
+  { -4, -46, 8, 4, HC_CREAM },
+  { -2, -42, 4, 3, HC_CREAM },
+  { -1, -39, 2, 29, HC_VESTD },
+  { -24, -31, 22, 3, HC_REFL },
+  { 2, -31, 22, 3, HC_REFL },
+  { -24, -23, 22, 3, HC_REFL },
+  { 2, -23, 22, 3, HC_REFL },
+  { -25, -10, 50, 1, HC_FURD },
+  { -1, -9, 2, 7, HC_FURD },
+  { -24, -6, 18, 12, HC_FURD },
+  { -23, -7, 16, 12, HC_FUR },
+  { -22, -8, 14, 1, HC_FUR },
+  { 6, -6, 18, 12, HC_FURD },
+  { 7, -7, 16, 12, HC_FUR },
+  { 8, -8, 14, 1, HC_FUR },
+  { -20, -2, 10, 7, HC_PINK },
+  { 10, -2, 10, 7, HC_PINK },
+  { -21, -6, 3, 3, HC_PINKD },
+  { -17, -7, 3, 3, HC_PINKD },
+  { -13, -6, 3, 3, HC_PINKD },
+  { 9, -6, 3, 3, HC_PINKD },
+  { 13, -7, 3, 3, HC_PINKD },
+  { 17, -6, 3, 3, HC_PINKD },
+  { -27, -79, 8, 8, HC_FUR },
+  { 19, -79, 8, 8, HC_FUR },
+  { -25, -77, 4, 4, HC_PINK },
+  { 21, -77, 4, 4, HC_PINK },
+  { -14, -78, 28, 2, HC_FUR },
+  { -18, -76, 36, 2, HC_FUR },
+  { -21, -74, 42, 4, HC_FUR },
+  { -22, -70, 44, 14, HC_FUR },
+  { -21, -56, 42, 2, HC_FUR },
+  { -18, -54, 36, 2, HC_FUR },
+  { -25, -66, 8, 11, HC_FUR },
+  { 17, -66, 8, 11, HC_FUR },
+  { -23, -64, 5, 7, HC_CREAM },
+  { 18, -64, 5, 7, HC_CREAM },
+  { -9, -61, 18, 9, HC_CREAM },
+  { -2, -60, 4, 3, HC_PINKD },
+  { -11, -91, 22, 2, HC_HELM },
+  { -15, -89, 30, 3, HC_HELM },
+  { -18, -86, 36, 8, HC_HELM },
+  { -22, -78, 44, 3, HC_HELMB },
+  { -2, -91, 4, 13, HC_HELMB },
+  { -12, -86, 6, 2, HC_HELMS },
+  { -14, -84, 3, 2, HC_HELMS },
+};
+static const uint16_t HPAL[20] = { C_HFUR, C_HFURD, C_HCREAM, C_HPINK, C_HPINKD, C_HVEST, C_HVESTD, C_REFL, C_EYE, C_WHITE, C_HMOUTH, C_HELM, C_HELMB, C_HELMS, C_CASE, C_ALU, C_ALUD, C_GAFFA, C_MARK, C_WHEEL };
+static uint16_t hcol(int k, bool sk, bool dead) {
+  if (dead && k == HC_FUR) return C_DEAD;
+  if (dead && (k == HC_FURD || k == HC_PINK || k == HC_PINKD)) return C_DEADFIN;
+  if (sk && k == HC_FUR) return C_HFURS;
+  if (sk && k == HC_FURD) return C_HFURSD;
+  return HPAL[k];
+}
+enum { MC_WALL, MC_WALL2, MC_CARPET, MC_CARPETL, MC_TRUSS, MC_TV, MC_SCR1, MC_SCR2, MC_BAR1, MC_BAR2, MC_BAR3, MC_BANNER, MC_PINKV, MC_BLUE, MC_MARK, MC_ALUD, MC_DESK, MC_DESKD, MC_LAMP, MC_SWHITE };
+static const int16_t MESSE[][5] = {
+  { 0, 23, 135, 150, MC_WALL },
+  { 0, 23, 135, 40, MC_WALL2 },
+  { 0, 172, 135, 40, MC_CARPET },
+  { 0, 172, 135, 2, MC_CARPETL },
+  { 0, 27, 135, 2, MC_TRUSS },
+  { 0, 34, 135, 2, MC_TRUSS },
+  { 8, 36, 1, 20, MC_TRUSS },
+  { 26, 36, 1, 20, MC_TRUSS },
+  { 2, 56, 31, 20, MC_TV },
+  { 4, 58, 27, 16, MC_SCR1 },
+  { 7, 61, 12, 2, MC_SWHITE },
+  { 7, 65, 18, 1, MC_SWHITE },
+  { 7, 68, 14, 1, MC_SWHITE },
+  { 108, 36, 1, 20, MC_TRUSS },
+  { 126, 36, 1, 20, MC_TRUSS },
+  { 102, 56, 31, 20, MC_TV },
+  { 104, 58, 27, 16, MC_SCR2 },
+  { 107, 68, 4, 4, MC_BAR1 },
+  { 113, 64, 4, 8, MC_BAR2 },
+  { 119, 61, 4, 11, MC_BAR3 },
+  { 125, 66, 4, 6, MC_BAR1 },
+  { 3, 170, 18, 3, MC_ALUD },
+  { 5, 92, 14, 78, MC_BANNER },
+  { 5, 96, 14, 6, MC_PINKV },
+  { 5, 104, 14, 2, MC_BLUE },
+  { 7, 112, 10, 1, MC_MARK },
+  { 7, 115, 8, 1, MC_MARK },
+  { 5, 150, 14, 14, MC_BLUE },
+  { 112, 140, 23, 34, MC_DESK },
+  { 112, 140, 23, 3, MC_DESKD },
+  { 116, 120, 17, 13, MC_TV },
+  { 117, 121, 15, 10, MC_SCR1 },
+  { 123, 133, 3, 5, MC_LAMP },
+  { 119, 137, 11, 2, MC_LAMP },
+  { 119, 124, 8, 1, MC_SWHITE },
+};
+static const uint16_t MPAL[20] = { C_MWALL, C_MWALL2, C_CARPET, C_CARPETL, C_TRUSS, C_TV, C_SCR1, C_SCR2, C_OK, C_SEL, C_LOW, C_BANNER, C_HVEST, C_SCR1, C_MARK, C_ALUD, C_DESK, C_DESKD, C_LAMP, C_WHITE };
+static const int HDCY = 150;                                            // Hamster: Oberkante Case
+static const int PLH[5][2] = { { 4, 178 }, { 20, 192 }, { 106, 178 }, { 122, 190 }, { 40, 196 } };   // Muell auf dem Messeteppich
+static void drawMesse(bool off) {   // Messestand (off: Hamster schlaeft, Licht und Bildschirme aus)
+  for (unsigned i = 0; i < sizeof(MESSE) / sizeof(MESSE[0]); i++) {
+    int k = MESSE[i][4]; bool scr = k == MC_SCR1 || k == MC_SCR2 || k == MC_BAR1 || k == MC_BAR2 || k == MC_BAR3 || k == MC_SWHITE;
+    R(MESSE[i][0], MESSE[i][1], MESSE[i][2], MESSE[i][3], (off && scr) ? C_TV : MPAL[k]);
+  }
+  for (int i = 0; i < 17; i++) { R(i * 8, 29, 1, 5, C_TRUSS); R(i * 8 + 2, 30, 1, 1, C_TRUSS); R(i * 8 + 4, 31, 1, 1, C_TRUSS); R(i * 8 + 6, 32, 1, 1, C_TRUSS); }   // Traverse
+  const int lx[3] = { 24, 67, 110 }; const uint16_t lc[3] = { C_WARM, C_MAG, C_CYAN };
+  for (int i = 0; i < 3; i++) {   // Scheinwerfer
+    int x = lx[i]; uint16_t c = off ? C_LAMP : lc[i];
+    R(x - 1, 36, 3, 3, C_LAMP); R(x - 6, 39, 12, 2, C_LAMP); R(x - 6, 39, 2, 9, C_LAMP); R(x + 4, 39, 2, 9, C_LAMP); R(x - 4, 42, 8, 8, C_LAMP); R(x - 3, 49, 6, 2, c);
+    if (!off) { R(x - 1, 53, 2, 1, c); R(x - 2, 57, 1, 1, c); R(x + 1, 61, 1, 1, c); }
+  }
+}
+static void mug(int x, int y, int ap) {   // Kaffeetasse mit Dampf
+  R(x, y, 9, 10, C_WHITE); R(x + 1, y + 1, 7, 2, C_COFFEE); R(x + 9, y + 2, 3, 1, C_WHITE); R(x + 11, y + 2, 1, 5, C_WHITE); R(x + 9, y + 6, 3, 1, C_WHITE);
+  for (int i = 0; i < 3; i++) R(x + 2 + i * 3, y - 3 - ((ap / 120 + i) % 4), 1, 2, C_DESKD);
+}
+static void hamster(int cx, int cy, int mo, bool sk, bool dead, int32_t t, int an, bool full) {
+  gcx = cx; gcy = cy;
+  for (unsigned i = 0; i < sizeof(HAM) / sizeof(HAM[0]); i++) SR(HAM[i][0], HAM[i][1], HAM[i][2], HAM[i][3], hcol(HAM[i][4], sk, dead));
+  if (full) { T("Medien", cx + sc(-5) - 18, cy + sc(8), 1, C_MARK); T("Hamster", cx + sc(-5) - 21, cy + sc(16), 1, C_MARK); }   // Name auf dem Gaffa
+  bool blink = (t % 3200) < 140; uint16_t E = C_EYE, fur = hcol(HC_FUR, sk, dead);
+  if (mo == M_DEAD) { for (int i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
+  else if (an == A_DIZZY) { for (int e = 0; e < 2; e++) { int o = e * 19; SR(-14 + o, -71, 9, 9, E); SR(-12 + o, -69, 5, 5, fur); SR(-11 + o, -68, 3, 3, E); } }
+  else if (an == A_STARTLE) { SR(-14, -72, 9, 10, E); SR(5, -72, 9, 10, E); SR(-13, -71, 3, 3, C_WHITE); SR(6, -71, 3, 3, C_WHITE); }
+  else if (mo == M_SLEEP || blink) { SR(-13, -66, 7, 2, E); SR(6, -66, 7, 2, E); }
+  else { SR(-13, -70, 7, 8, E); SR(6, -70, 7, 8, E); SR(-12, -69, 3, 3, C_WHITE); SR(7, -69, 3, 3, C_WHITE); SR(-9, -65, 1, 1, C_WHITE); SR(10, -65, 1, 1, C_WHITE); }
+  if (mo == M_SAD && !blink && an == A_NONE) SR(-11, -62, 2, 3, C_BUBBLE);
+  uint16_t M = C_HMOUTH;
+  if (an == A_STARTLE) SR(-2, -57, 4, 3, M);
+  else if (mo == M_HAPPY || mo == M_OK) { SR(-5, -56, 4, 1, M); SR(1, -56, 4, 1, M); SR(-1, -57, 2, 1, M); if (mo == M_HAPPY) { SR(-19, -61, 5, 2, C_HPINK); SR(14, -61, 5, 2, C_HPINK); } }
+  else if (mo == M_SAD) { SR(-4, -55, 8, 1, M); SR(-5, -54, 1, 1, M); SR(4, -54, 1, 1, M); }
+  else if (mo == M_SICK) { SR(-4, -55, 3, 1, M); SR(-1, -56, 3, 1, M); SR(2, -55, 3, 1, M); }
+  else if (mo == M_SLEEP) SR(-2, -56, 4, 1, M);
+  else SR(-4, -55, 8, 1, M);
+  if (!full) return;
+  if (sk) { SR(-46, -86, 2, 8, C_LOW); SR(-49, -83, 8, 2, C_LOW); }
+  if (mo == M_SLEEP && an != A_SLEEP) { bool z = ((t / 700) % 2) == 1; T(z ? "Z" : "z", cx + sc(26), cy + sc(-86) + (z ? 0 : 4), 2, C_TXT); }
+}
+
 static void drawPet(int sp, int cx, int cy, int mo, bool sk, bool dead, int32_t t, int an, int ap, bool full) {
+  if (sp == 3) { hamster(cx, cy, mo, sk, dead, t, an, full); return; }
   gcx = cx; gcy = cy;
   const Spec& P = SPC[sp];
   uint16_t mc = C_EYE, eb;
@@ -360,7 +574,8 @@ static void drawPet(int sp, int cx, int cy, int mo, bool sk, bool dead, int32_t 
 
 static void drawHeader() {   // Hunger (Besteck), Spass (Controller), Energie (Blitz), darunter Gesundheit
   float vals[3] = { S.hunger, S.fun, S.energy };
-  const int labs[3] = { I_FORK, I_PAD, I_BOLT };
+  bool ham = S.species == 3;   // Medien Hamster: Kaffee statt Essen, Zigarette statt Spielen
+  const int labs[3] = { ham ? I_CUP : I_FORK, ham ? I_CIG : I_PAD, I_BOLT };
   const uint16_t lcol[3] = { C_FOOD, C_PLAY, C_SEL };
   for (int i = 0; i < 3; i++) {
     int x0 = 2 + i * 44, id = labs[i];
@@ -375,7 +590,8 @@ static void drawHeader() {   // Hunger (Besteck), Spass (Controller), Energie (B
 }
 static void drawMenu(int an, bool sk) {
   if (S.dead) { int x = (W - 44) / 2; R(x, MENUY, 44, 22, C_SEL); iconK(I_HEART, x + (44 - kW(I_HEART, 3, 2)) / 2, MENUY + (22 - kH(I_HEART, 3, 2)) / 2, 3, 2, C_BG); return; }
-  const int ids[5] = { I_FORK, I_PAD, S.sleeping ? I_SUN : I_MOON, I_ROD, I_KIT };
+  bool ham = S.species == 3;
+  const int ids[5] = { ham ? I_CUP : I_FORK, ham ? I_CIG : I_PAD, S.sleeping ? I_SUN : I_MOON, I_ROD, I_KIT };
   const uint16_t cols[5] = { C_FOOD, C_PLAY, C_SEL, C_OK, C_CHEEK };
   for (int i = 0; i < 5; i++) {
     int x = 1 + i * 27, id = ids[i]; bool sel = S.menu == i;
@@ -388,73 +604,92 @@ static void drawMenu(int an, bool sk) {
 
 static void drawGame(int32_t t) {
   int mo = mood();
+  bool ham = S.species == 3;   // Medien Hamster: Messestand statt Wasser
   uint16_t bg = S.sleeping ? C_BGS : (isNight() ? C_BGN : C_BG);
   R(0, 0, W, H, bg);
+  if (ham) drawMesse(S.sleeping);
   drawHeader();
-  for (int i = 0; i < S.plastic; i++) drawPlastic(i, PL[i][0], PL[i][1] + (int)(((t / 600) + i) % 2));
+  const int (*pl)[2] = ham ? PLH : PL;
+  for (int i = 0; i < S.plastic; i++) drawPlastic(i, pl[i][0], pl[i][1] + (int)(((t / 600) + i) % 2));
   // Animation der letzten Aktion (1,2 Sekunden, nur Optik)
   int ap = t - S.animStart, an = (S.anim && ap >= 0 && ap < 1200) ? S.anim : A_NONE;
   if (an == A_FISH) {     // Angelschnur runter, Teil einhaken, hochziehen
-    int i = S.animArg, sx = PL[i][0], sy = PL[i][1], d = sy - 4 - WTOP;
+    int i = S.animArg, sx = pl[i][0], sy = pl[i][1], d = sy - 4 - WTOP;
     int ly = ap < 500 ? WTOP + d * ap / 500 : sy - 4 - d * (ap - 500) / 700;
     R(sx + 4, WTOP, 1, ly - WTOP + 3, C_TXT); R(sx + 1, ly + 3, 4, 1, C_TXT); R(sx + 1, ly + 1, 1, 2, C_TXT);
     drawPlastic(i, sx, ap < 500 ? sy : ly + 4);   // liegt noch, bis der Haken es greift
-  } else if (an == A_WAVES) {     // Wellen ziehen durchs Wasser
+  } else if (an == A_WAVES && !ham) {     // Wellen ziehen durchs Wasser
     for (int r = 0; r < 2; r++) for (int k = 0; k < 16; k++) R((k * 16 + ap / 20) % 256 - 16, 40 + r * 110 + ((k + r) % 2) * 2, 8, 2, C_BUBBLE);
   }
   int jy = 0, dx = 0;
-  if (an == A_PLAY) jy = -((ap * (1200 - ap)) / 24000);       // Sprung
-  else if (an == A_WAKE) jy = -((ap * (1200 - ap)) / 60000);  // kleiner Hopser
-  else if (an == A_WAVES) jy = -(((ap / 150) % 2) * 3);       // schaukelt
+  if (an == A_PLAY) jy = ham ? 0 : -((ap * (1200 - ap)) / 24000);   // Sprung (Hamster raucht in Ruhe)
+  else if (an == A_WAKE) jy = -((ap * (1200 - ap)) / 60000);         // kleiner Hopser
+  else if (an == A_WAVES) jy = ham ? 0 : -(((ap / 150) % 2) * 3);    // schaukelt
   else if (an == A_STARTLE) jy = ap < 200 ? -(ap / 20) : (ap < 600 ? -10 : -((1200 - ap) / 60));
-  if (an == A_DIZZY) dx = ((ap / 60) % 2) * 4 - 2;            // wackelt
-  gkn = 5; gkd = 4;
-  int cx = DCX + dx, bob = (!S.sleeping && !S.dead && ((t / 500) % 2) == 1) ? 2 : 0, cy = DCY + bob + jy;
+  if (an == A_DIZZY) dx = ham ? ((ap / 60) % 2) * 10 - 5 : ((ap / 60) % 2) * 4 - 2;   // wackelt
+  else if (an == A_WAVES && ham) dx = ((ap / 120) % 2) * 6 - 3;                       // Hamster wackelt mit dem Case
+  if (ham) { gkn = 1; gkd = 1; } else { gkn = 5; gkd = 4; }
+  int cx = DCX + dx, bob = (!ham && !S.sleeping && !S.dead && ((t / 500) % 2) == 1) ? 2 : 0, cy = (ham ? HDCY : DCY) + bob + jy;
   bool pend = an == A_MEDIC && ap < 500;   // Kapsel noch unterwegs: sieht noch krank aus
   if (pend && mo != M_SLEEP) mo = M_SICK;
   bool sk = (S.sick || pend) && !S.dead;
   drawPet(S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
   const Spec& P = SPC[S.species];
-  if (an == A_FEED) {     // Wienerle oder Haferkeks kommt angeschwommen, dann wird geschnappt
-    if (ap < 600) {
+  if (an == A_FEED) {
+    if (ham) {   // Kaffee kommt angeflogen, dann wird geschluerft
+      int tx = cx + sc(P.nx) - 4, ty = cy + sc(P.ny) - 4;
+      if (ap < 600) mug(FOODX + (tx - FOODX) * ap / 600, FOODY + (ty - FOODY) * ap / 600, ap); else mug(tx, ty + (ap / 200) % 2, ap);
+    } else if (ap < 600) {   // Wienerle oder Haferkeks kommt angeschwommen
       int f = S.animArg ? I_COOKIE : I_WIENER, tx = cx + sc(P.nx), ty = cy + sc(P.ny) - kH(f, 3, 2) / 2;
       iconK(f, FOODX + (tx - FOODX) * ap / 600, FOODY + (ty - FOODY) * ap / 600, 3, 2, S.animArg ? C_COOKIE : C_WIENER);
     }
-  } else if (an == A_PLAY) {   // Ball auf dem Kopf, Spritzer beim Eintauchen
-    int bb = (ap % 400) * (400 - ap % 400) / 4000;
-    iconK(I_BALL, cx + sc(P.bx) - 2, cy + sc(P.by) - kH(I_BALL, 3, 2) - bb, 3, 2, C_LOW);
-    if (ap > 900) { int sp = (ap - 900) / 15; for (int i = 0; i < 5; i++) R(cx + sc(-34) + i * 20, cy + sc(16) + 6 - sp - (i % 2) * 4, 3, 3, C_BUBBLE); }
+  } else if (an == A_PLAY) {
+    if (ham) {   // Zigarettenpause: Glut glimmt, Rauch steigt auf
+      int mx = cx + sc(3), my = cy + sc(-56);
+      R(mx, my, 3, 2, C_FILTER); R(mx + 3, my, 10, 2, C_WHITE); R(mx + 13, my, 2, 2, ((ap / 150) % 2) ? C_EMBER : C_LOW);
+      for (int i = 0; i < 4; i++) { int k = (ap / 8 + i * 12) % 36; R(mx + 14 + ((k / 6 + i) % 2) * 2, my - 3 - k, 2, 2, C_DESKD); }
+    } else {     // Ball auf dem Kopf, Spritzer beim Eintauchen
+      int bb = (ap % 400) * (400 - ap % 400) / 4000;
+      iconK(I_BALL, cx + sc(P.bx) - 2, cy + sc(P.by) - kH(I_BALL, 3, 2) - bb, 3, 2, C_LOW);
+      if (ap > 900) { int sp = (ap - 900) / 15; for (int i = 0; i < 5; i++) R(cx + sc(-34) + i * 20, cy + sc(16) + 6 - sp - (i % 2) * 4, 3, 3, C_BUBBLE); }
+    }
   } else if (an == A_SLEEP) {  // Mond sinkt herab, Sterne funkeln
-    int my = cy + sc(-30);
+    int my = cy + sc(P.ty);
     iconK(I_MOON, cx + sc(20), ap < 600 ? -16 + (my + 16) * ap / 600 : my, 3, 2, C_SEL);
     for (int i = 0; i < 4; i++) if (((ap / 200) + i) % 2 == 0) { R(ST[i][0] - 2, ST[i][1], 5, 1, C_SEL); R(ST[i][0], ST[i][1] - 2, 1, 5, C_SEL); }
   } else if (an == A_WAKE) {   // Sonne geht auf
-    iconK(I_SUN, cx + sc(26), cy + sc(-16) - 20 * ap / 1200, 3, 2, C_SEL);
+    iconK(I_SUN, cx + sc(26), cy + sc(P.ty + 14) - 20 * ap / 1200, 3, 2, C_SEL);
   } else if (an == A_MEDIC) {  // Kapsel faellt ins Maul, dann Funkeln
     if (ap < 500) { int px = cx + sc(P.bx + 2), pe = cy + sc(P.by - 4) - 5, py = WTOP + (pe - WTOP) * ap / 500; R(px, py, 5, 5, C_LOW); R(px + 5, py, 5, 5, C_TXT); }
-    else for (int i = 0; i < 4; i++) { int x = cx + sc(-40 + i * 26), y = cy + sc(-12) - (ap - 500) / 30 - (i % 2) * 8; R(x - 2, y, 5, 1, C_OK); R(x, y - 2, 1, 5, C_OK); }
+    else for (int i = 0; i < 4; i++) { int x = cx + sc(-40 + i * 26), y = cy + sc(P.ty + 18) - (ap - 500) / 30 - (i % 2) * 8; R(x - 2, y, 5, 1, C_OK); R(x, y - 2, 1, 5, C_OK); }
   } else if (an == A_NEW) {    // Herzchen steigen auf
-    for (int i = 0; i < 3; i++) iconK(I_HEART, cx + sc(-34 + i * 30), cy + sc(-30) - ap / 40 + (i % 2) * 6, 3, 2, C_CHEEK);
+    for (int i = 0; i < 3; i++) iconK(I_HEART, cx + sc(-34 + i * 30), cy + sc(P.ty) - ap / 40 + (i % 2) * 6, 3, 2, C_CHEEK);
   } else if (an == A_DIZZY) {  // Sterne kreisen um den Kopf
-    for (int i = 0; i < 3; i++) { int k = (ap / 100 + i * 3) % 8, x = cx + sc(P.ex - 6) + CIR[k][0] * 2, y = cy + sc(-30) - 6 + CIR[k][1] / 2; R(x - 2, y, 5, 1, C_SEL); R(x, y - 2, 1, 5, C_SEL); }
+    for (int i = 0; i < 3; i++) { int k = (ap / 100 + i * 3) % 8, x = cx + sc(P.ex - 6) + CIR[k][0] * 2, y = cy + sc(P.ty) - 6 + CIR[k][1] / 2; R(x - 2, y, 5, 1, C_SEL); R(x, y - 2, 1, 5, C_SEL); }
   } else if (an == A_STARTLE) {   // Ausrufezeichen
-    int x = cx + sc(P.nx + 2), y = cy + sc(-20); R(x, y, 3, 10, C_LOW); R(x, y + 12, 3, 3, C_LOW);
+    int x = cx + sc(P.qx), y = cy + sc(P.ty + 10); R(x, y, 3, 10, C_LOW); R(x, y + 12, 3, 3, C_LOW);
   }
-  // Meldung (Icon) in der Mitte unter dem Tier
+  // Meldung (Icon): unter dem Tier, beim Hamster rechts an der Wand
+  int ix = ham ? 116 : INFX, iy = ham ? 99 : INFY;
   if (an == A_NONE && t < S.msgUntil && S.msgIcon >= 0) {
-    int id = S.msgIcon, x = INFX - icW(id), y = INFY - icH(id);
+    int id = S.msgIcon, x = ix - icW(id), y = iy - icH(id);
     icon(id, x, y, 2, C_TXT);
     if (S.msgNo) iconNo(id, x, y, 2);
   }
-  // Name und Alter rechts unten
-  const char* name = NAMES[S.species];
-  int nw = tw(name, 2) + 4;
-  R(CORNX - nw + 1, NAMEY, nw - 2, 18, C_SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C_SEL);
-  T(name, CORNX - nw + 3, NAMEY + 2, 2, C_BG);
+  // Name und Alter rechts unten (der Hamster hat seinen Namen auf dem Case)
+  if (!ham) {
+    const char* name = NAMES[S.species];
+    int nw = tw(name, 2) + 4;
+    R(CORNX - nw + 1, NAMEY, nw - 2, 18, C_SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C_SEL);
+    T(name, CORNX - nw + 3, NAMEY + 2, 2, C_BG);
+  }
   if (!S.dead) {
     char buf[12]; snprintf(buf, sizeof(buf), "%u", (unsigned)(S.age / 60));
-    int cw = kW(I_CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2;
-    iconK(I_CLOCK, ax, AGEY + 3, 3, 2, C_DIM); T(buf, ax + cw + 3, AGEY, 2, C_DIM);
+    if (ham) { int ax = CORNX - tw(buf, 1) - 9; icon(I_CLOCK, ax, 204, 1, C_DIM); T(buf, ax + 9, 204, 1, C_DIM); }
+    else {
+      int cw = kW(I_CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2;
+      iconK(I_CLOCK, ax, AGEY + 3, 3, 2, C_DIM); T(buf, ax + cw + 3, AGEY, 2, C_DIM);
+    }
   }
   drawMenu(an, sk);
 }
@@ -476,7 +711,7 @@ static void drawSettings(int32_t t) {
     R(3, y, 129, 24, sel ? C_SEL : C_PANEL);
     if (r == 0) T("Neu", 8, y + 5, 2, fg);   // neues Spiel
     else iconK(ids[r], 8 + (20 - kW(ids[r], 3, 2)) / 2, y + (24 - kH(ids[r], 3, 2)) / 2, 3, 2, fg);
-    if (r == 0) { gkn = 1; gkd = 4; drawPet(S.species, 104, y + 14, M_HAPPY, false, false, t, A_NONE, 0, false); }
+    if (r == 0) { if (S.species == 3) { gkn = 1; gkd = 6; drawPet(3, 104, y + 17, M_HAPPY, false, false, t, A_NONE, 0, false); } else { gkn = 1; gkd = 4; drawPet(S.species, 104, y + 14, M_HAPPY, false, false, t, A_NONE, 0, false); } }
     else if (r == 1) { const char* v = S.speed == 0 ? "1x" : (S.speed == 1 ? "10x" : "50x"); T(v, 128 - tw(v, 2), y + 4, 2, fg); }
     else if (r == 2 || r == 3) { int n = r == 2 ? S.vol : S.sens; if (n == 0) iconK(I_CROSSX, 110, y + 7, 3, 2, sel ? C_BG : C_LOW); else drawBars(105, y + 5, n, fg, sel ? C_FIN : C_DIM); }
     else if (r == 4) {
@@ -492,13 +727,14 @@ static void drawSettings(int32_t t) {
 }
 static void drawPicker(int32_t t) {   // Tier fuer das neue Spiel waehlen
   R(0, 0, W, H, C_BGS);
-  for (int r = 0; r < 3; r++) {
-    int y = 6 + r * 56; bool sel = S.uiSel == r;
-    R(3, y, 129, 52, sel ? C_SEL : C_PANEL);
-    gkn = 1; gkd = 2; drawPet(r, INFX, y + 22, M_HAPPY, false, false, t, A_NONE, 0, false);
-    T(NAMES[r], INFX - tw(NAMES[r], 1) / 2, y + 41, 1, sel ? C_BG : C_TXT);
+  for (int r = 0; r < 4; r++) {
+    int y = 4 + r * 48; bool sel = S.uiSel == r;
+    R(3, y, 129, 46, sel ? C_SEL : C_PANEL);
+    if (r == 3) { gkn = 1; gkd = 4; drawPet(r, INFX, y + 26, M_HAPPY, false, false, t, A_NONE, 0, false); }
+    else { gkn = 1; gkd = 2; drawPet(r, INFX, y + 18, M_HAPPY, false, false, t, A_NONE, 0, false); }
+    T(NAMES[r], INFX - tw(NAMES[r], 1) / 2, y + 37, 1, sel ? C_BG : C_TXT);
   }
-  backRow(6 + 3 * 56, S.uiSel == 3);
+  backRow(4 + 4 * 48, S.uiSel == 4);
 }
 static void drawWifi(int32_t t) {     // Anleitung: WLAN vom iPhone aus eintragen
   R(0, 0, W, H, C_BGS);
