@@ -63,7 +63,7 @@ static const uint16_t C_BG = rgb(0x0b, 0x3a, 0x5c), C_BGS = rgb(0x05, 0x1c, 0x2e
   C_DESKD = rgb(0xb8, 0xbc, 0xc8),
   C_COFFEE = rgb(0x6b, 0x3e, 0x1f),
   C_FILTER = rgb(0xe0, 0xa0, 0x50),
-  C_EMBER = rgb(0xff, 0x6a, 0x2a);
+  C_EMBER = rgb(0xff, 0x6a, 0x2a), C_CASH = rgb(0x5a, 0xb8, 0x5a), C_CASHL = rgb(0xa8, 0xe0, 0x9a);
 
 struct Tama {
   float hunger, fun, energy, health;
@@ -120,7 +120,7 @@ static const char* const IC_CROSSX[] = { "#.....#", ".#...#.", "..#.#..", "...#.
 static const char* const IC_CUP[] = { "..#..#.....", ".#..#......", "..#..#.....", "########...", "#########..", "########.#.", "#########..", ".######....", "..####.....", nullptr };
 static const char* const IC_CIG[] = { "........#.#.", ".........#..", "........#...", "############", "############", nullptr };
 static const char* const IC_BROOM[] = { "........##.", ".......##..", "......##...", ".....##....", "...####....", "..######...", ".#######...", "#.#.#.#....", "#.#.#......", nullptr };
-static const char* const IC_PARTY[] = { "..#...#.#", "#...#....", "...##.#..", "..###....", ".####..#.", "#####....", "#####....", nullptr };
+static const char* const IC_PARTY[] = { "...#...", ".#####.", "#..#...", "#..#...", ".#####.", "...#..#", "...#..#", ".#####.", "...#...", nullptr };   // Dollarzeichen
 static const char* const* const ICONS[] = { IC_FORK, IC_PAD, IC_MOON, IC_SUN, IC_ROD, IC_KIT, IC_HEART, IC_BOLT, IC_CLOCK, IC_BALL, IC_WIENER, IC_COOKIE,
   IC_NEWG, IC_FAST, IC_SPK, IC_WAVE, IC_BATT, IC_WIFI, IC_DL, IC_BACK, IC_CHECK, IC_CROSSX, IC_CUP, IC_CIG, IC_BROOM, IC_PARTY };
 static int icW(int id) { return (int)strlen(ICONS[id][0]); }
@@ -353,6 +353,7 @@ static void drawPlastic(int i, int x, int y) {
   else { R(x, y, 10, 2, C_BAG); R(x + 1, y + 2, 8, 5, C_BAG); R(x, y + 7, 3, 3, C_BAG); R(x + 7, y + 7, 3, 3, C_BAG); }
 }
 static int gkn = 5, gkd = 4, gcx, gcy;   // Vergroesserung und Mitte des Tiers
+static bool gParty = false; static int gHip = 0;   // Pole-Dance: ohne Case, Popo wackelt
 static int sc(int v) { int p = v * gkn; return p >= 0 ? p / gkd : -((-p + gkd - 1) / gkd); }   // abrunden
 static void SR(int dx, int dy, int w, int h, uint16_t c) { int x0 = sc(dx), y0 = sc(dy); R(gcx + x0, gcy + y0, sc(dx + w) - x0, sc(dy + h) - y0, c); }
 
@@ -532,10 +533,20 @@ static void partyLights(int ap) {   // Party: Scheinwerfer schiessen bunte Strah
   const int lx[3] = { 24, 67, 110 }; const uint16_t pc[3] = { C_MAG, C_CYAN, C_WARM };
   for (int i = 0; i < 3; i++) { uint16_t col = pc[(ap / 200 + i) % 3]; int dir = ((ap / 300 + i) % 3) - 1; for (int k = 0; k < 12; k++) R(lx[i] + dir * k * 3, 52 + k * 7, 2, 2, col); }
 }
-static void partyFront(int cx, int cy, int ap) {   // Party: Konfettiregen und Musiknoten
-  const uint16_t cc[5] = { C_MAG, C_CYAN, C_SEL, C_OK, C_LOW };
-  for (int k = 0; k < 14; k++) R((k * 37 + 200 + (ap / 30) * ((k % 3) - 1)) % 135, 23 + (ap / 5 + k * 29) % 185, 2, 2, cc[k % 5]);
-  for (int i = 0; i < 2; i++) { int nx = cx + 28 + i * 10, ny = cy - 95 - ((ap / 30 + i * 15) % 20); R(nx, ny, 1, 6, C_TXT); R(nx - 2, ny + 5, 3, 2, C_TXT); R(nx + 1, ny, 2, 1, C_TXT); }
+static void partyFront(int cx, int cy, int ap) {   // Pole-Dance: Stange, Discokugel, Lichtpunkte, Dollarscheine, Noten
+  int px = cx + 26;
+  R(px - 3, 36, 9, 3, C_ALUD); R(px, 36, 3, 173, C_ALU); R(px, 36, 1, 173, C_WHITE); R(px - 5, 209, 13, 3, C_ALUD);   // Stange
+  int by = ap < 800 ? 36 + 44 * ap / 800 : 80;   // Discokugel faehrt runter und dreht sich
+  R(cx, 36, 1, by - 36 + 1, C_TRUSS);
+  for (int dy = -9; dy <= 9; dy += 3) for (int dx = -9; dx <= 9; dx += 3) if (dx * dx + dy * dy <= 90) R(cx + dx - 1, by + 10 + dy - 1, 3, 3, (((dx + 9) / 3 + (dy + 9) / 3 + ap / 120) % 2) ? C_REFL : C_HELMB);
+  R(cx - 5, by + 4, 2, 2, C_WHITE);
+  const uint16_t rc[3] = { C_MAG, C_CYAN, C_WARM };
+  for (int k = 0; k < 8; k++) R((k * 41 + ap / 7) % 130, 40 + (k * 53) % 150, 2, 2, rc[(k + ap / 150) % 3]);   // Lichtpunkte
+  for (int k = 0; k < 8; k++) {   // Dollarscheine fliegen von links und rechts rein
+    int pr = (ap / 3 + k * 47) % 140, x = (k % 2) ? 135 - pr : pr - 10, y = 70 + (k * 29) % 110 + ((ap / 120 + k) % 2);
+    R(x, y, 10, 5, C_CASHL); R(x + 1, y + 1, 8, 3, C_CASH); R(x + 4, y + 1, 2, 3, C_CASHL);
+  }
+  for (int i = 0; i < 2; i++) { int nx = cx - 36 + i * 10, ny = cy - 100 - ((ap / 30 + i * 15) % 20); R(nx, ny, 1, 6, C_TXT); R(nx - 2, ny + 5, 3, 2, C_TXT); R(nx + 1, ny, 2, 1, C_TXT); }
 }
 static void mug(int x, int y, int ap) {   // Kaffeetasse mit Dampf
   R(x, y, 9, 10, C_WHITE); R(x + 1, y + 1, 7, 2, C_COFFEE); R(x + 9, y + 2, 3, 1, C_WHITE); R(x + 11, y + 2, 1, 5, C_WHITE); R(x + 9, y + 6, 3, 1, C_WHITE);
@@ -566,12 +577,14 @@ static void stencilName(int cx, int cy) {
     if (g >= 0) for (int rr = 0; rr < 5; rr++) for (int k = 0; HW[g][rr][k]; k++) if (HW[g][rr][k] == '#') R(x + k, cy + 20 + rr, 1, 1, C_REFL);
     x += hwW(g) + 1;
   }
-  R(cx - w / 2, cy + 22, w, 1, C_CASE);   // Schablonen-Stege
 }
 static void hamster(int cx, int cy, int mo, bool sk, bool dead, int32_t t, int an, bool full) {
   gcx = cx; gcy = cy;
-  for (unsigned i = 0; i < sizeof(HAM) / sizeof(HAM[0]); i++) SR(HAM[i][0], HAM[i][1], HAM[i][2], HAM[i][3], hcol(HAM[i][4], sk, dead));
-  if (full) stencilName(cx, cy);   // Name als Schablonen-Aufdruck
+  for (unsigned i = 0; i < sizeof(HAM) / sizeof(HAM[0]); i++) {
+    int dy = HAM[i][1]; if (gParty && dy >= 1) continue;   // Party: Case weg
+    SR(HAM[i][0] + (dy >= -14 ? gHip : 0), dy, HAM[i][2], HAM[i][3], hcol(HAM[i][4], sk, dead));
+  }
+  if (full && !gParty) stencilName(cx, cy);   // Name als Schablonen-Aufdruck
   bool blink = (t % 3200) < 140; uint16_t E = C_EYE, fur = hcol(HC_FUR, sk, dead);
   if (mo == M_DEAD) { for (int i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
   else if (an == A_DIZZY) { for (int e = 0; e < 2; e++) { int o = e * 19; SR(-14 + o, -71, 9, 9, E); SR(-12 + o, -69, 5, 5, fur); SR(-11 + o, -68, 3, 3, E); } }
@@ -707,12 +720,15 @@ static void drawGame(int32_t t) {
   if (an == A_DIZZY) dx = ham ? ((ap / 60) % 2) * 10 - 5 : ((ap / 60) % 2) * 4 - 2;   // wackelt
   else if (an == A_WAVES && ham) dx = ((ap / 120) % 2) * 6 - 3;                       // Hamster wackelt mit dem Case
   if (ham) { gkn = 1; gkd = 1; } else { gkn = 5; gkd = 4; }
-  int cx = DCX + dx, bob = (!ham && !S.sleeping && !S.dead && ((t / 500) % 2) == 1) ? 2 : 0, cy = (ham ? HDCY : DCY) + bob + jy;
+  bool party = ham && an == A_MEDIC;   // Pole-Dance: Case weg, Hamster unten am Boden an der Stange
+  int cx = DCX + dx, bob = (!ham && !S.sleeping && !S.dead && ((t / 500) % 2) == 1) ? 2 : 0, cy = (ham ? (party ? 203 : HDCY) : DCY) + bob + jy;
   bool pend = an == A_MEDIC && ap < 500 && !ham;   // Kapsel noch unterwegs: sieht noch krank aus
   if (pend && mo != M_SLEEP) mo = M_SICK;
   bool sk = (S.sick || pend) && !S.dead;
-  if (ham && an == A_MEDIC) partyLights(ap);
+  if (party) partyLights(ap);
+  gParty = party; gHip = party ? ((ap / 150) % 2) * 6 - 3 : 0;
   drawPet(S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
+  gParty = false; gHip = 0;
   const Spec& P = SPC[S.species];
   if (an == A_FEED) {
     if (ham) {   // Kaffee kommt angeflogen, dann wird geschluerft
