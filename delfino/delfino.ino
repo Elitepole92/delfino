@@ -541,7 +541,7 @@ static void mug(int x, int y, int ap) {   // Kaffeetasse mit Dampf
   R(x, y, 9, 10, C_WHITE); R(x + 1, y + 1, 7, 2, C_COFFEE); R(x + 9, y + 2, 3, 1, C_WHITE); R(x + 11, y + 2, 1, 5, C_WHITE); R(x + 9, y + 6, 3, 1, C_WHITE);
   for (int i = 0; i < 3; i++) R(x + 2 + i * 3, y - 3 - ((ap / 120 + i) % 4), 1, 2, C_DESKD);
 }
-// Name des Hamsters: krakelig auf ein schraeg geklebtes, abgerissenes Stueck Tape (eigene 3x5-Handschrift)
+// Name des Hamsters: wie mit Schablone aufs Case gesprueht (eigene 3x5-Schrift)
 static const char* const HW_CH = "MEDINHASTR";
 static const char* const HW[10][5] = {
   { "#...#", "##.##", "#.#.#", "#...#", "#...#" },   // M
@@ -557,25 +557,21 @@ static const char* const HW[10][5] = {
 };
 static int hwIdx(char ch) { for (int i = 0; i < 10; i++) if (HW_CH[i] == ch) return i; return -1; }
 static int hwW(int g) { return g < 0 ? 3 : (int)strlen(HW[g][0]); }
-static void tapeName(int cx, int cy) {
-  for (int x = -30; x < 30; x += 2) {   // Tape: steigt nach rechts an, ausgefranste Enden, Schattenkante unten
-    int top = cy + 9 - (x + 30) / 8, h = 11;
-    if (x == -30) { top += 2; h -= 3; } else if (x == -28) { top += 1; h -= 1; } else if (x == 28) { top += 1; h -= 3; } else if (x == 26) h -= 1;
-    R(cx + x, top, 2, h, C_GAFFA); R(cx + x, top + h - 1, 2, 1, C_ALUD);
-  }
-  const char* s = "MEDIEN HAMSTER"; const int jit[7] = { 0, 1, 0, -1, 1, 0, -1 };
+static void stencilName(int cx, int cy) {
+  const char* s = "MEDIEN HAMSTER";
   int w = -1; for (int i = 0; s[i]; i++) w += hwW(hwIdx(s[i])) + 1;
-  int x = cx - 29 + (58 - w) / 2;
+  int x = cx - w / 2;
   for (int i = 0; s[i]; i++) {
-    int g = hwIdx(s[i]), y = cy + 12 - (x - cx + 30) / 8 + jit[i % 7];
-    if (g >= 0) for (int rr = 0; rr < 5; rr++) for (int k = 0; HW[g][rr][k]; k++) if (HW[g][rr][k] == '#') R(x + k, y + rr, 1, 1, C_MARK);
+    int g = hwIdx(s[i]);
+    if (g >= 0) for (int rr = 0; rr < 5; rr++) for (int k = 0; HW[g][rr][k]; k++) if (HW[g][rr][k] == '#') R(x + k, cy + 20 + rr, 1, 1, C_REFL);
     x += hwW(g) + 1;
   }
+  R(cx - w / 2, cy + 22, w, 1, C_CASE);   // Schablonen-Stege
 }
 static void hamster(int cx, int cy, int mo, bool sk, bool dead, int32_t t, int an, bool full) {
   gcx = cx; gcy = cy;
   for (unsigned i = 0; i < sizeof(HAM) / sizeof(HAM[0]); i++) SR(HAM[i][0], HAM[i][1], HAM[i][2], HAM[i][3], hcol(HAM[i][4], sk, dead));
-  if (full) tapeName(cx, cy);   // Name auf dem Tape
+  if (full) stencilName(cx, cy);   // Name als Schablonen-Aufdruck
   bool blink = (t % 3200) < 140; uint16_t E = C_EYE, fur = hcol(HC_FUR, sk, dead);
   if (mo == M_DEAD) { for (int i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
   else if (an == A_DIZZY) { for (int e = 0; e < 2; e++) { int o = e * 19; SR(-14 + o, -71, 9, 9, E); SR(-12 + o, -69, 5, 5, fur); SR(-11 + o, -68, 3, 3, E); } }

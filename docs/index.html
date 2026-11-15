@@ -572,25 +572,21 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     ['##.', '#.#', '##.', '#.#', '#.#'],
   ];
   const hwIdx = (ch) => HW_CH.indexOf(ch), hwW = (g) => (g < 0 ? 3 : HW[g][0].length);
-  function tapeName(cx, cy) {
-    for (let x = -30; x < 30; x += 2) {
-      let top = cy + 9 - dv(x + 30, 8), h = 11;
-      if (x === -30) { top += 2; h -= 3; } else if (x === -28) { top += 1; h -= 1; } else if (x === 28) { top += 1; h -= 3; } else if (x === 26) h -= 1;
-      R(cx + x, top, 2, h, C.GAFFA); R(cx + x, top + h - 1, 2, 1, C.ALUD);
-    }
-    const s = 'MEDIEN HAMSTER', jit = [0, 1, 0, -1, 1, 0, -1];
+  function stencilName(cx, cy) {
+    const s = 'MEDIEN HAMSTER';
     let w = -1; for (const ch of s) w += hwW(hwIdx(ch)) + 1;
-    let x = cx - 29 + dv(58 - w, 2);
+    let x = cx - dv(w, 2);
     for (let i = 0; i < s.length; i++) {
-      const g = hwIdx(s[i]), y = cy + 12 - dv(x - cx + 30, 8) + jit[i % 7];
-      if (g >= 0) for (let rr = 0; rr < 5; rr++) for (let k = 0; k < HW[g][rr].length; k++) if (HW[g][rr][k] === '#') R(x + k, y + rr, 1, 1, C.MARK);
+      const g = hwIdx(s[i]);
+      if (g >= 0) for (let rr = 0; rr < 5; rr++) for (let k = 0; k < HW[g][rr].length; k++) if (HW[g][rr][k] === '#') R(x + k, cy + 20 + rr, 1, 1, C.REFL);
       x += hwW(g) + 1;
     }
+    R(cx - dv(w, 2), cy + 22, w, 1, C.CASE);
   }
   function hamster(cx, cy, mo, sk, dead, t, an, full) {
     gcx = cx; gcy = cy;
     for (const e of HAM) SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead));
-    if (full) tapeName(cx, cy);
+    if (full) stencilName(cx, cy);
     const blink = (t % 3200) < 140, E = C.EYE, fur = hcol(HC.FUR, sk, dead);
     if (mo === M.DEAD) { for (let i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
     else if (an === A.DIZZY) { for (let e = 0; e < 2; e++) { const o = e * 19; SR(-14 + o, -71, 9, 9, E); SR(-12 + o, -69, 5, 5, fur); SR(-11 + o, -68, 3, 3, E); } }
