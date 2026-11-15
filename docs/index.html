@@ -354,7 +354,6 @@ const HAM = [
   [-35, 1, 5, 5, HC.ALUD],
   [30, 1, 5, 5, HC.ALUD],
   [-35, 24, 5, 5, HC.ALUD],
-  [-28, 6, 46, 18, HC.GAFFA],
   [14, 12, 10, 6, HC.ALU],
   [16, 14, 6, 2, HC.ALUD],
   [30, 24, 5, 5, HC.ALUD],
@@ -511,10 +510,39 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     R(x, y, 9, 10, C.WHITE); R(x + 1, y + 1, 7, 2, C.COFFEE); R(x + 9, y + 2, 3, 1, C.WHITE); R(x + 11, y + 2, 1, 5, C.WHITE); R(x + 9, y + 6, 3, 1, C.WHITE);
     for (let i = 0; i < 3; i++) R(x + 2 + i * 3, y - 3 - ((dv(ap, 120) + i) % 4), 1, 2, C.DESKD);
   };
+  const HW_CH = 'MEDINHASTR';
+  const HW = [
+    ['#...#', '##.##', '#.#.#', '#...#', '#...#'],
+    ['###', '#..', '##.', '#..', '###'],
+    ['##.', '#.#', '#.#', '#.#', '##.'],
+    ['#', '#', '#', '#', '#'],
+    ['#..#', '##.#', '#.##', '#..#', '#..#'],
+    ['#.#', '#.#', '###', '#.#', '#.#'],
+    ['.#.', '#.#', '###', '#.#', '#.#'],
+    ['###', '#..', '###', '..#', '###'],
+    ['###', '.#.', '.#.', '.#.', '.#.'],
+    ['##.', '#.#', '##.', '#.#', '#.#'],
+  ];
+  const hwIdx = (ch) => HW_CH.indexOf(ch), hwW = (g) => (g < 0 ? 3 : HW[g][0].length);
+  function tapeName(cx, cy) {
+    for (let x = -30; x < 30; x += 2) {
+      let top = cy + 9 - dv(x + 30, 8), h = 11;
+      if (x === -30) { top += 2; h -= 3; } else if (x === -28) { top += 1; h -= 1; } else if (x === 28) { top += 1; h -= 3; } else if (x === 26) h -= 1;
+      R(cx + x, top, 2, h, C.GAFFA); R(cx + x, top + h - 1, 2, 1, C.ALUD);
+    }
+    const s = 'MEDIEN HAMSTER', jit = [0, 1, 0, -1, 1, 0, -1];
+    let w = -1; for (const ch of s) w += hwW(hwIdx(ch)) + 1;
+    let x = cx - 29 + dv(58 - w, 2);
+    for (let i = 0; i < s.length; i++) {
+      const g = hwIdx(s[i]), y = cy + 12 - dv(x - cx + 30, 8) + jit[i % 7];
+      if (g >= 0) for (let rr = 0; rr < 5; rr++) for (let k = 0; k < HW[g][rr].length; k++) if (HW[g][rr][k] === '#') R(x + k, y + rr, 1, 1, C.MARK);
+      x += hwW(g) + 1;
+    }
+  }
   function hamster(cx, cy, mo, sk, dead, t, an, full) {
     gcx = cx; gcy = cy;
     for (const e of HAM) SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead));
-    if (full) { T('Medien', cx + sc(-5) - 18, cy + sc(8), 1, C.MARK); T('Hamster', cx + sc(-5) - 21, cy + sc(16), 1, C.MARK); }
+    if (full) tapeName(cx, cy);
     const blink = (t % 3200) < 140, E = C.EYE, fur = hcol(HC.FUR, sk, dead);
     if (mo === M.DEAD) { for (let i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
     else if (an === A.DIZZY) { for (let e = 0; e < 2; e++) { const o = e * 19; SR(-14 + o, -71, 9, 9, E); SR(-12 + o, -69, 5, 5, fur); SR(-11 + o, -68, 3, 3, E); } }
