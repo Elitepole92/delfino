@@ -134,7 +134,7 @@ const C = {
   EMBER: rgb(0xff, 0x6a, 0x2a)
 };
 const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
-  NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21, CUP: 22, CIG: 23 };
+  NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21, CUP: 22, CIG: 23, BROOM: 24, PARTY: 25 };
 const ICONS = [
   ['#.#.#...##.', '#.#.#..###.', '#.#.#..###.', '#####..###.', '.###...###.', '..#.....#..', '..#.....#..', '..#.....#..', '..#.....#..'],
   ['..########..', '.##########.', '###.####.###', '##...##.#.##', '###.####.###', '############', '####....####', '.##......##.'],
@@ -159,7 +159,10 @@ const ICONS = [
   ['........#', '.......##', '#.....##.', '##...##..', '.##.##...', '..###....', '...#.....'],
   ['#.....#', '.#...#.', '..#.#..', '...#...', '..#.#..', '.#...#.', '#.....#'],
   ['..#..#.....', '.#..#......', '..#..#.....', '########...', '#########..', '########.#.', '#########..', '.######....', '..####.....'],
-  ['........#.#.', '.........#..', '........#...', '############', '############'],];
+  ['........#.#.', '.........#..', '........#...', '############', '############'],
+  ['........##.', '.......##..', '......##...', '.....##....', '...####....', '..######...', '.#######...', '#.#.#.#....', '#.#.#......'],
+  ['..#...#.#', '#...#....', '...##.#..', '..###....', '.####..#.', '#####....', '#####....']
+];
 const icW = (id) => ICONS[id][0].length, icH = (id) => ICONS[id].length;
 const NAMES = ['Delfino', 'Orki', 'Schildi', 'Medien Hamster'];
 
@@ -167,9 +170,12 @@ function newEgg(seed) {
   return { hunger: 80, fun: 80, energy: 80, health: 100, age: 0, seed: (seed >>> 0) || 12345,
     sleeping: false, dead: false, sick: false, plastic: 0, menu: 0, msgIcon: -1, msgNo: false, msgUntil: 0, anim: 0, animArg: 0, animStart: 0,
     now: 0, coolUntil: 0, snd: 0, sndStart: 0, species: 0, speed: 0, vol: 2, sens: 2,
-    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0, ballUsed: 0 };
+    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0, ballUsed: 0, messT: 0 };
 }
 const clamp = (v) => (v < 0 ? 0 : v > 100 ? 100 : v);
+const MS = { CABLE: 0, CUP: 1, CONF: 2 };
+const messAt = (S, i) => (S.messT >> (i * 2)) & 3;
+function messSet(S, i, typ) { S.messT = ((S.messT & ~(3 << (i * 2))) | (typ << (i * 2))) >>> 0; }
 function rnd(S) { S.seed = (Math.imul(S.seed, 1664525) + 1013904223) >>> 0; return (S.seed >>> 16) % 10000; }
 const A = { NONE: 0, FEED: 1, PLAY: 2, SLEEP: 3, WAKE: 4, FISH: 5, MEDIC: 6, NEW: 7, WAVES: 8, DIZZY: 9, BUBBLES: 10, STARTLE: 11 };
 const SND = { NOPE: 12, ALERT: 13, CLICK: 14 };
@@ -206,7 +212,7 @@ function step(S) {
   S.hunger = clamp(S.hunger); S.fun = clamp(S.fun); S.energy = clamp(S.energy);
   if (S.sleeping && S.energy >= 100 && !night) S.sleeping = false;
   if (!S.sleeping && night && S.energy < 40) S.sleeping = true;
-  if (rnd(S) < 40 && S.plastic < 5) S.plastic++;
+  if (rnd(S) < 40 && S.plastic < 5) { messSet(S, S.plastic, (S.age & 1) ? MS.CONF : MS.CABLE); S.plastic++; }
   const low = Math.min(S.hunger, S.fun, S.energy);
   const risk = 2 + 3 * S.plastic + (low < 25 ? 6 : 0);
   if (rnd(S) < risk && !S.sick) S.sick = true;
@@ -220,6 +226,7 @@ function actFeed(S, t) {
   if (S.sleeping) { say(S, t, I.MOON); return; }
   if (S.hunger > 90) { say(S, t, S.species === 3 ? I.CUP : I.FORK, true); return; }
   S.hunger = clamp(S.hunger + 25); say(S, t, I.HEART); anim(S, t, A.FEED, S.age % 2);
+  if (S.species === 3 && S.plastic < 5) { messSet(S, S.plastic, MS.CUP); S.plastic++; }
 }
 function actPlay(S, t) {
   if (S.dead) return;
@@ -235,11 +242,17 @@ function actSleep(S, t) {
 }
 function actFish(S, t) {
   if (S.dead) return;
-  if (S.plastic === 0) { say(S, t, I.ROD, true); return; }
-  S.plastic--; S.fun = clamp(S.fun + 5); say(S, t, I.HEART); anim(S, t, A.FISH, S.plastic);
+  if (S.plastic === 0) { say(S, t, S.species === 3 ? I.BROOM : I.ROD, true); return; }
+  S.plastic--; S.fun = clamp(S.fun + 5); say(S, t, I.HEART); anim(S, t, A.FISH, S.plastic + messAt(S, S.plastic) * 8);
 }
 function actMedic(S, t) {
   if (S.dead) return;
+  if (S.species === 3) {
+    if (S.sleeping) { say(S, t, I.MOON); return; }
+    S.sick = false; S.fun = clamp(S.fun + 15); S.energy = clamp(S.energy - 10); S.hunger = clamp(S.hunger - 5);
+    if (S.plastic < 5) { messSet(S, S.plastic, MS.CONF); S.plastic++; }
+    say(S, t, I.HEART); anim(S, t, A.MEDIC); sfx(S, t, A.NEW); return;
+  }
   if (!S.sick) { say(S, t, I.KIT, true); return; }
   S.sick = false; S.fun = clamp(S.fun - 5); say(S, t, I.HEART); anim(S, t, A.MEDIC);
 }
@@ -506,6 +519,39 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       if (!off) { R(x - 1, 53, 2, 1, c); R(x - 2, 57, 1, 1, c); R(x + 1, 61, 1, 1, c); }
     }
   }
+  function drawMess(typ, x, y, left) {
+    if (typ === MS.CABLE) { R(x, y + 3, 12, 1, C.LAMP); R(x + 2, y, 1, 7, C.LAMP); R(x + 2, y, 6, 1, C.LAMP); R(x + 7, y, 1, 5, C.LAMP); R(x + 4, y + 5, 6, 1, C.LAMP); R(x, y + 6, 4, 1, C.LAMP); R(x + 12, y + 2, 3, 3, C.ALU); }
+    else if (typ === MS.CUP) { R(x, y + 1, 7, 2, C.COFFEE); R(x + 1, y + 3, 5, 8, C.WHITE); R(x + 1, y + 6, 5, 2, C.FILTER); }
+    else {
+      const px = [0, 4, 8, 2, 6, 10], py = [2, 0, 3, 6, 5, 7], cc = [C.MAG, C.SEL, C.CYAN, C.OK, C.GAFFA, C.LOW];
+      for (let k = 0; k < left; k++) R(x + px[k], y + py[k], k === 4 ? 3 : 2, k === 4 ? 1 : 2, cc[k]);
+    }
+  }
+  function cleanUp(typ, sx, sy, ap) {
+    if (typ === MS.CABLE) {
+      if (ap < 600) drawMess(MS.CABLE, sx, sy, 6);
+      let n = 1 + dv(ap, 300); if (n > 4) n = 4; const ox = sx + 6, oy = sy + 4;
+      for (let k = 0; k < n; k++) { const s = 2 + 2 * k; R(ox - k - 1, oy - k - 1, s + 2, 1, C.LAMP); R(ox - k - 1, oy + k + 1, s + 2, 1, C.LAMP); R(ox - k - 1, oy - k - 1, 1, s + 2, C.LAMP); R(ox + k + 1, oy - k - 1, 1, s + 2, C.LAMP); }
+    } else if (typ === MS.CUP) {
+      const bx = sx > 90 ? sx - 14 : sx + 14, by = sy - 4;
+      R(bx, by + 2, 10, 11, C.LAMP); R(bx + 3, by, 4, 3, C.LAMP); R(bx + 2, by + 4, 2, 6, C.TV);
+      if (ap < 700) drawMess(MS.CUP, sx + dv((bx - sx) * ap, 700), sy - dv(ap * (700 - ap), 12250), 6);
+    } else {
+      const left = 6 - dv(ap, 150); if (left > 0) drawMess(MS.CONF, sx, sy, left);
+      const bx = sx - 2 + (dv(ap, 100) % 2) * 6, by = sy - 12;
+      for (let k = 0; k < 6; k++) R(bx + 6 - k, by + k * 2, 1, 2, C.FILTER);
+      R(bx - 2, by + 12, 8, 3, C.SEL);
+    }
+  }
+  function partyLights(ap) {
+    const lx = [24, 67, 110], pc = [C.MAG, C.CYAN, C.WARM];
+    for (let i = 0; i < 3; i++) { const col = pc[(dv(ap, 200) + i) % 3], dir = ((dv(ap, 300) + i) % 3) - 1; for (let k = 0; k < 12; k++) R(lx[i] + dir * k * 3, 52 + k * 7, 2, 2, col); }
+  }
+  function partyFront(cx, cy, ap) {
+    const cc = [C.MAG, C.CYAN, C.SEL, C.OK, C.LOW];
+    for (let k = 0; k < 14; k++) R((k * 37 + 200 + dv(ap, 30) * ((k % 3) - 1)) % 135, 23 + (dv(ap, 5) + k * 29) % 185, 2, 2, cc[k % 5]);
+    for (let i = 0; i < 2; i++) { const nx = cx + 28 + i * 10, ny = cy - 95 - ((dv(ap, 30) + i * 15) % 20); R(nx, ny, 1, 6, C.TXT); R(nx - 2, ny + 5, 3, 2, C.TXT); R(nx + 1, ny, 2, 1, C.TXT); }
+  }
   const mug = (x, y, ap) => {
     R(x, y, 9, 10, C.WHITE); R(x + 1, y + 1, 7, 2, C.COFFEE); R(x + 9, y + 2, 3, 1, C.WHITE); R(x + 11, y + 2, 1, 5, C.WHITE); R(x + 9, y + 6, 3, 1, C.WHITE);
     for (let i = 0; i < 3; i++) R(x + 2 + i * 3, y - 3 - ((dv(ap, 120) + i) % 4), 1, 2, C.DESKD);
@@ -630,7 +676,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   }
   function drawMenu(S, an, sk) {
     if (S.dead) { const x = dv(W - 44, 2); R(x, MENUY, 44, 22, C.SEL); iconK(I.HEART, x + dv(44 - kW(I.HEART, 3, 2), 2), MENUY + dv(22 - kH(I.HEART, 3, 2), 2), 3, 2, C.BG); return; }
-    const ids = [S.species === 3 ? I.CUP : I.FORK, S.species === 3 ? I.CIG : I.PAD, S.sleeping ? I.SUN : I.MOON, I.ROD, I.KIT], cols = [C.FOOD, C.PLAY, C.SEL, C.OK, C.CHEEK];
+    const ids = [S.species === 3 ? I.CUP : I.FORK, S.species === 3 ? I.CIG : I.PAD, S.sleeping ? I.SUN : I.MOON, S.species === 3 ? I.BROOM : I.ROD, S.species === 3 ? I.PARTY : I.KIT], cols = [C.FOOD, C.PLAY, C.SEL, C.OK, C.CHEEK];
     for (let i = 0; i < 5; i++) {
       const x = 1 + i * 27, id = ids[i], sel = S.menu === i;
       const warn = (i === 3 && S.plastic + (an === A.FISH ? 1 : 0) >= 3) || (i === 4 && sk);
@@ -647,10 +693,12 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     if (ham) drawMesse(S.sleeping);
     drawHeader(S);
     const pl = ham ? PLH : PL;
-    for (let i = 0; i < S.plastic; i++) drawPlastic(i, pl[i][0], pl[i][1] + ((Math.floor(t / 600) + i) % 2));
+    for (let i = 0; i < S.plastic; i++) { if (ham) drawMess(messAt(S, i), pl[i][0], pl[i][1], 6); else drawPlastic(i, pl[i][0], pl[i][1] + ((Math.floor(t / 600) + i) % 2)); }
     const ap = Math.floor(t - S.animStart), an = (S.anim && ap >= 0 && ap < 1200) ? S.anim : A.NONE;
-    if (an === A.FISH) {
-      const i = S.animArg, sx = pl[i][0], sy = pl[i][1], d = sy - 4 - WTOP;
+    if (an === A.FISH && ham) {
+      const i = S.animArg % 8; cleanUp(dv(S.animArg, 8), pl[i][0], pl[i][1], ap);
+    } else if (an === A.FISH) {
+      const i = S.animArg % 8, sx = pl[i][0], sy = pl[i][1], d = sy - 4 - WTOP;
       const ly = ap < 500 ? WTOP + dv(d * ap, 500) : sy - 4 - dv(d * (ap - 500), 700);
       R(sx + 4, WTOP, 1, ly - WTOP + 3, C.TXT); R(sx + 1, ly + 3, 4, 1, C.TXT); R(sx + 1, ly + 1, 1, 2, C.TXT);
       drawPlastic(i, sx, ap < 500 ? sy : ly + 4);
@@ -661,14 +709,16 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     if (an === A.PLAY) jy = ham ? 0 : -dv(ap * (1200 - ap), 24000);
     else if (an === A.WAKE) jy = -dv(ap * (1200 - ap), 60000);
     else if (an === A.WAVES) jy = ham ? 0 : -((dv(ap, 150) % 2) * 3);
+    else if (an === A.MEDIC && ham) jy = -((dv(ap, 150) % 2) * 3);
     else if (an === A.STARTLE) jy = ap < 200 ? -dv(ap, 20) : (ap < 600 ? -10 : -dv(1200 - ap, 60));
     if (an === A.DIZZY) dx = ham ? (dv(ap, 60) % 2) * 10 - 5 : (dv(ap, 60) % 2) * 4 - 2;
     else if (an === A.WAVES && ham) dx = (dv(ap, 120) % 2) * 6 - 3;
     if (ham) { gkn = 1; gkd = 1; } else { gkn = 5; gkd = 4; }
     const cx = DCX + dx, bob = (!ham && !S.sleeping && !S.dead && (Math.floor(t / 500) % 2) === 1) ? 2 : 0, cy = (ham ? HDCY : DCY) + bob + jy;
-    const pend = an === A.MEDIC && ap < 500;
+    const pend = an === A.MEDIC && ap < 500 && !ham;
     if (pend && mo !== M.SLEEP) mo = M.SICK;
     const sk = (S.sick || pend) && !S.dead;
+    if (ham && an === A.MEDIC) partyLights(ap);
     drawPet(S, S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
     const P = SPC[S.species];
     if (an === A.FEED) {
@@ -695,6 +745,8 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       for (let i = 0; i < 4; i++) if ((dv(ap, 200) + i) % 2 === 0) { R(ST[i][0] - 2, ST[i][1], 5, 1, C.SEL); R(ST[i][0], ST[i][1] - 2, 1, 5, C.SEL); }
     } else if (an === A.WAKE) {
       iconK(I.SUN, cx + sc(26), cy + sc(P.ty + 14) - dv(20 * ap, 1200), 3, 2, C.SEL);
+    } else if (an === A.MEDIC && ham) {
+      partyFront(cx, cy, ap);
     } else if (an === A.MEDIC) {
       if (ap < 500) { const px = cx + sc(P.bx + 2), pe = cy + sc(P.by - 4) - 5, py = WTOP + dv((pe - WTOP) * ap, 500); R(px, py, 5, 5, C.LOW); R(px + 5, py, 5, 5, C.TXT); }
       else for (let i = 0; i < 4; i++) { const x = cx + sc(-40 + i * 26), y = cy + sc(P.ty + 18) - dv(ap - 500, 30) - (i % 2) * 8; R(x - 2, y, 5, 1, C.OK); R(x, y - 2, 1, 5, C.OK); }
