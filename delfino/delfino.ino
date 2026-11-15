@@ -143,7 +143,7 @@ static int messAt(int i) { return (int)((S.messT >> (i * 2)) & 3u); }
 static void messSet(int i, int typ) { S.messT = (S.messT & ~(3u << (i * 2))) | ((uint32_t)typ << (i * 2)); }
 static int rnd() { S.seed = S.seed * 1664525u + 1013904223u; return (int)((S.seed >> 16) % 10000u); }
 enum { A_NONE, A_FEED, A_PLAY, A_SLEEP, A_WAKE, A_FISH, A_MEDIC, A_NEW, A_WAVES, A_DIZZY, A_BUBBLES, A_STARTLE };
-enum { S_NOPE = 12, S_ALERT, S_CLICK };
+enum { S_NOPE = 12, S_ALERT, S_CLICK, S_PARTY };
 // Melodien: Paare aus Frequenz (Hz, 0 = Pause) und Dauer (ms), -1 = Ende. Index = Animation bzw. S_*
 static const int16_t MEL_FEED[] = { 0, 600, 220, 70, 0, 80, 220, 70, 0, 80, 220, 70, -1 };
 static const int16_t MEL_PLAY[] = { 523, 60, 659, 60, 784, 60, 1047, 90, 0, 650, 392, 50, 262, 50, 196, 80, -1 };
@@ -159,7 +159,8 @@ static const int16_t MEL_STARTLE[] = { 1760, 50, 0, 30, 2093, 120, -1 };
 static const int16_t MEL_NOPE[] = { 196, 120, 0, 50, 147, 220, -1 };
 static const int16_t MEL_ALERT[] = { 1760, 70, 0, 70, 1760, 70, -1 };
 static const int16_t MEL_CLICK[] = { 1800, 12, -1 };
-static const int16_t* const MELS[] = { nullptr, MEL_FEED, MEL_PLAY, MEL_SLEEP, MEL_WAKE, MEL_FISH, MEL_MEDIC, MEL_NEW, MEL_WAVES, MEL_DIZZY, MEL_BUBBLES, MEL_STARTLE, MEL_NOPE, MEL_ALERT, MEL_CLICK };
+static const int16_t MEL_PARTY[] = { 523, 150, 659, 150, 784, 150, 659, 150, 523, 150, 659, 150, 784, 300, 0, 100, 880, 150, 784, 150, 659, 150, 784, 150, 1047, 450, -1 };
+static const int16_t* const MELS[] = { nullptr, MEL_FEED, MEL_PLAY, MEL_SLEEP, MEL_WAKE, MEL_FISH, MEL_MEDIC, MEL_NEW, MEL_WAVES, MEL_DIZZY, MEL_BUBBLES, MEL_STARTLE, MEL_NOPE, MEL_ALERT, MEL_CLICK, MEL_PARTY };
 static void sfx(int32_t t, int id) { S.snd = id; S.sndStart = t; }
 static void say(int32_t t, int icon, bool no = false) { S.msgIcon = icon; S.msgNo = no; S.msgUntil = t + 2500; if (no) sfx(t, S_NOPE); }
 static void anim(int32_t t, int a, int arg = 0) { S.anim = a; S.animArg = arg; S.animStart = t; S.msgUntil = t + 1200 + 2500; sfx(t, a); }
@@ -216,7 +217,7 @@ static void gMedic(int32_t t) {
     if (S.sleeping) { say(t, I_MOON); return; }
     S.sick = false; S.fun = clamp100(S.fun + 15); S.energy = clamp100(S.energy - 10); S.hunger = clamp100(S.hunger - 5);
     if (S.plastic < 5) { messSet(S.plastic, MS_CONF); S.plastic++; }
-    say(t, I_HEART); anim(t, A_MEDIC); sfx(t, A_NEW); return;
+    say(t, I_HEART); anim(t, A_MEDIC); sfx(t, S_PARTY); S.msgUntil = t + 3000 + 2500; return;   // Party dauert 3 s
   }
   if (!S.sick) { say(t, I_KIT, true); return; }
   S.sick = false; S.fun = clamp100(S.fun - 5); say(t, I_HEART); anim(t, A_MEDIC);
@@ -521,9 +522,10 @@ static void cleanUp(int typ, int sx, int sy, int ap) {   // Aufraeumen beim Medi
     if (ap < 700) drawMess(MS_CUP, sx + (bx - sx) * ap / 700, sy - (ap * (700 - ap)) / 12250, 6);
   } else {   // Konfetti wegfegen
     int left = 6 - ap / 150; if (left > 0) drawMess(MS_CONF, sx, sy, left);
-    int bx = sx - 2 + ((ap / 100) % 2) * 6, by = sy - 12;
-    for (int k = 0; k < 6; k++) R(bx + 6 - k, by + k * 2, 1, 2, C_FILTER);
-    R(bx - 2, by + 12, 8, 3, C_SEL);
+    int bx = sx - 4 + ((ap / 100) % 2) * 8, by = sy - 22;
+    for (int k = 0; k < 11; k++) R(bx + 12 - k, by + k * 2, 2, 2, C_FILTER);   // Stiel
+    R(bx - 2, by + 21, 10, 2, C_HELMB);                                          // Halter
+    R(bx - 4, by + 23, 14, 6, C_SEL); for (int k = 0; k < 4; k++) R(bx - 3 + k * 3, by + 26, 1, 3, C_FILTER);   // Borsten
   }
 }
 static void partyLights(int ap) {   // Party: Scheinwerfer schiessen bunte Strahlen
@@ -688,7 +690,8 @@ static void drawGame(int32_t t) {
   const int (*pl)[2] = ham ? PLH : PL;
   for (int i = 0; i < S.plastic; i++) { if (ham) drawMess(messAt(i), pl[i][0], pl[i][1], 6); else drawPlastic(i, pl[i][0], pl[i][1] + (int)(((t / 600) + i) % 2)); }
   // Animation der letzten Aktion (1,2 Sekunden, nur Optik)
-  int ap = t - S.animStart, an = (S.anim && ap >= 0 && ap < 1200) ? S.anim : A_NONE;
+  int alen = (ham && S.anim == A_MEDIC) ? 3000 : 1200;   // Party dauert laenger
+  int ap = t - S.animStart, an = (S.anim && ap >= 0 && ap < alen) ? S.anim : A_NONE;
   if (an == A_FISH && ham) {   // aufraeumen
     int i = S.animArg % 8; cleanUp(S.animArg / 8, pl[i][0], pl[i][1], ap);
   } else if (an == A_FISH) {     // Angelschnur runter, Teil einhaken, hochziehen

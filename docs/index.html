@@ -178,7 +178,7 @@ const messAt = (S, i) => (S.messT >> (i * 2)) & 3;
 function messSet(S, i, typ) { S.messT = ((S.messT & ~(3 << (i * 2))) | (typ << (i * 2))) >>> 0; }
 function rnd(S) { S.seed = (Math.imul(S.seed, 1664525) + 1013904223) >>> 0; return (S.seed >>> 16) % 10000; }
 const A = { NONE: 0, FEED: 1, PLAY: 2, SLEEP: 3, WAKE: 4, FISH: 5, MEDIC: 6, NEW: 7, WAVES: 8, DIZZY: 9, BUBBLES: 10, STARTLE: 11 };
-const SND = { NOPE: 12, ALERT: 13, CLICK: 14 };
+const SND = { NOPE: 12, ALERT: 13, CLICK: 14, PARTY: 15 };
 const MELS = [null,
   [0, 600, 220, 70, 0, 80, 220, 70, 0, 80, 220, 70, -1],
   [523, 60, 659, 60, 784, 60, 1047, 90, 0, 650, 392, 50, 262, 50, 196, 80, -1],
@@ -193,7 +193,8 @@ const MELS = [null,
   [1760, 50, 0, 30, 2093, 120, -1],
   [196, 120, 0, 50, 147, 220, -1],
   [1760, 70, 0, 70, 1760, 70, -1],
-  [1800, 12, -1]
+  [1800, 12, -1],
+  [523, 150, 659, 150, 784, 150, 659, 150, 523, 150, 659, 150, 784, 300, 0, 100, 880, 150, 784, 150, 659, 150, 784, 150, 1047, 450, -1]
 ];
 function sfx(S, t, id) { S.snd = id; S.sndStart = t; }
 function say(S, t, icon, no = false) { S.msgIcon = icon; S.msgNo = no; S.msgUntil = t + 2500; if (no) sfx(S, t, SND.NOPE); }
@@ -251,7 +252,7 @@ function actMedic(S, t) {
     if (S.sleeping) { say(S, t, I.MOON); return; }
     S.sick = false; S.fun = clamp(S.fun + 15); S.energy = clamp(S.energy - 10); S.hunger = clamp(S.hunger - 5);
     if (S.plastic < 5) { messSet(S, S.plastic, MS.CONF); S.plastic++; }
-    say(S, t, I.HEART); anim(S, t, A.MEDIC); sfx(S, t, A.NEW); return;
+    say(S, t, I.HEART); anim(S, t, A.MEDIC); sfx(S, t, SND.PARTY); S.msgUntil = t + 3000 + 2500; return;
   }
   if (!S.sick) { say(S, t, I.KIT, true); return; }
   S.sick = false; S.fun = clamp(S.fun - 5); say(S, t, I.HEART); anim(S, t, A.MEDIC);
@@ -538,9 +539,10 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       if (ap < 700) drawMess(MS.CUP, sx + dv((bx - sx) * ap, 700), sy - dv(ap * (700 - ap), 12250), 6);
     } else {
       const left = 6 - dv(ap, 150); if (left > 0) drawMess(MS.CONF, sx, sy, left);
-      const bx = sx - 2 + (dv(ap, 100) % 2) * 6, by = sy - 12;
-      for (let k = 0; k < 6; k++) R(bx + 6 - k, by + k * 2, 1, 2, C.FILTER);
-      R(bx - 2, by + 12, 8, 3, C.SEL);
+      const bx = sx - 4 + (dv(ap, 100) % 2) * 8, by = sy - 22;
+      for (let k = 0; k < 11; k++) R(bx + 12 - k, by + k * 2, 2, 2, C.FILTER);
+      R(bx - 2, by + 21, 10, 2, C.HELMB);
+      R(bx - 4, by + 23, 14, 6, C.SEL); for (let k = 0; k < 4; k++) R(bx - 3 + k * 3, by + 26, 1, 3, C.FILTER);
     }
   }
   function partyLights(ap) {
@@ -694,7 +696,8 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     drawHeader(S);
     const pl = ham ? PLH : PL;
     for (let i = 0; i < S.plastic; i++) { if (ham) drawMess(messAt(S, i), pl[i][0], pl[i][1], 6); else drawPlastic(i, pl[i][0], pl[i][1] + ((Math.floor(t / 600) + i) % 2)); }
-    const ap = Math.floor(t - S.animStart), an = (S.anim && ap >= 0 && ap < 1200) ? S.anim : A.NONE;
+    const alen = (ham && S.anim === A.MEDIC) ? 3000 : 1200;
+    const ap = Math.floor(t - S.animStart), an = (S.anim && ap >= 0 && ap < alen) ? S.anim : A.NONE;
     if (an === A.FISH && ham) {
       const i = S.animArg % 8; cleanUp(dv(S.animArg, 8), pl[i][0], pl[i][1], ap);
     } else if (an === A.FISH) {
