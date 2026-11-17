@@ -1011,6 +1011,7 @@ static bool loadState() {
 #include <driver/gpio.h>
 #include <esp_timer.h>
 #include <esp_attr.h>
+#include "kompat.h"
 #include <sys/time.h>
 // ---- Sensoren: Schwellen je Stufe (Einstellungen -> Sensoren: aus, schwach, mittel, stark) ----
 #define DEBUG 0                                              // 1 = Messwerte im Seriellen Monitor (115200 Baud)
@@ -1049,11 +1050,7 @@ static void battLog() {   // jede Stunde den Akkustand merken; Luecken (Tiefschl
   for (uint32_t i = 1; i < hrs; i++) logPush(255);
   logPush((uint8_t)S.batt); rtcLog = ns;
 }
-// Bauteile abschalten, wenn die Funktion in dieser Version der Bibliothek existiert (sonst passiert nichts)
-template <class T> static auto imuSleep(T& i, int) -> decltype(i.sleep(), void()) { i.sleep(); }
-template <class T> static void imuSleep(T&, long) {}
-template <class T> static auto extOff(T& p, int) -> decltype(p.setExtOutput(false), void()) { p.setExtOutput(false); }
-template <class T> static void extOff(T&, long) {}
+// imuSleep() / extOff() stehen in kompat.h (Vorlagen mag der Arduino-Prototypengenerator nicht)
 static void deepSleepNow() {   // Tiefschlaf: nur eine Taste weckt, die Uhr laeuft im Zeitgeber des Chips weiter
   S.deepN++; saveState();
   rtcMagic = RTC_MAGIC; rtcSec = wallSec();
