@@ -89,6 +89,8 @@ struct Tama {
   uint32_t messT;               // Medien Hamster: Art der Unordnung je Platz (2 Bit: Kabel, Becher, Konfetti)
   int ballAns; int32_t ballAt;  // Orakel: Antwort (-1 = noch keine) und Zeitpunkt des Schuettelns
   uint32_t ballUsed;            // Orakel: schon gegebene Antworten (je ein Bit)
+  uint8_t blog[24];             // Akku-Verlauf: stuendlich Prozent, 255 = unbekannt, ganz rechts das Neueste
+  int slpFail, deepN;           // Leichtschlaf-Fehlversuche, Anzahl Tiefschlaf-Naechte
 };
 static Tama S;
 static M5Canvas cv(&M5.Display);
@@ -136,6 +138,7 @@ static void newEgg(uint32_t seed) {
   S.species = 0; S.speed = 0; S.vol = 2; S.sens = 2;
   S.ui = 0; S.uiSel = 0; S.req = 0; S.batt = -1; S.chg = false; S.wifiOk = false; S.netState = 0; S.netPct = 0; S.netErr = 0;
   S.ballAns = -1; S.ballAt = 0; S.ballUsed = 0; S.messT = 0;
+  memset(S.blog, 255, sizeof(S.blog)); S.slpFail = 0; S.deepN = 0;
 }
 static float clamp100(float v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
 enum { MS_CABLE, MS_CUP, MS_CONF };   // Unordnung beim Medien Hamster
@@ -239,8 +242,10 @@ static void catchUp(uint32_t target) {      // Stick war aus: das Tier hat gesch
 }
 static bool needs() { return !S.dead && (S.sick || S.plastic >= 3 || fminf(S.hunger, fminf(S.fun, S.energy)) < 25); }
 static void newGame(int32_t t, int sp) {    // neues Tier, Einstellungen und Uhr bleiben
-  uint32_t now = S.now; int speed = S.speed, vol = S.vol, sens = S.sens, batt = S.batt; bool chg = S.chg, wifiOk = S.wifiOk;
+  uint32_t now = S.now; int speed = S.speed, vol = S.vol, sens = S.sens, batt = S.batt, sf = S.slpFail, dn = S.deepN; bool chg = S.chg, wifiOk = S.wifiOk;
+  uint8_t bl[24]; memcpy(bl, S.blog, sizeof(bl));
   newEgg(S.seed ^ (uint32_t)t);
+  memcpy(S.blog, bl, sizeof(bl)); S.slpFail = sf; S.deepN = dn;
   S.now = now; S.speed = speed; S.vol = vol; S.sens = sens; S.batt = batt; S.chg = chg; S.wifiOk = wifiOk; S.species = sp;
   say(t, I_HEART); anim(t, A_NEW);
 }
@@ -279,12 +284,13 @@ static void gBall(int32_t t) {   // schuetteln oder A: neue Antwort
 // ---- Tasten ----
 static const int SET_N = 8;   // Einstellungen: Neues Spiel, Tempo, Lautstaerke, Sensoren, Akku, WLAN, Update, Zurueck (+ versteckt: Orakel)
 static void pressLong() {     // Taste B lang: Einstellungen auf/zu
-  if (S.ui == 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui == 5) S.ui = 0; else S.ui = 1;
+  if (S.ui == 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui == 5) S.ui = 0; else S.ui = 1;   // aus Akku-Seite (6) zurueck in die Einstellungen
 }
 static void pressNext() {
   if (S.ui == 1) S.uiSel = (S.uiSel + 1) % (SET_N + 1);   // nach "Zurueck" kommt der versteckte Platz
   else if (S.ui == 5) { S.ui = 1; S.uiSel = SET_N; }
   else if (S.ui == 2) S.uiSel = (S.uiSel + 1) % 5;
+  else if (S.ui == 6) S.uiSel = (S.uiSel + 1) % 2;
   else if (S.ui == 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
 static void pressOk(int32_t t) {
@@ -293,6 +299,7 @@ static void pressOk(int32_t t) {
     else if (S.uiSel == 1) S.speed = (S.speed + 1) % 3;
     else if (S.uiSel == 2) S.vol = (S.vol + 1) % 4;
     else if (S.uiSel == 3) S.sens = (S.sens + 1) % 4;
+    else if (S.uiSel == 4) { S.ui = 6; S.uiSel = 1; }   // Akku-Seite, Auswahl steht auf Zurueck
     else if (S.uiSel == 5) { S.ui = 3; S.req = 1; S.netState = 0; }
     else if (S.uiSel == 6) { S.ui = 4; S.req = 2; S.netState = 1; S.netPct = 0; S.netErr = 0; }
     else if (S.uiSel == 7) S.ui = 0;
@@ -301,6 +308,7 @@ static void pressOk(int32_t t) {
   }
   if (S.ui == 2) { if (S.uiSel == 4) { S.ui = 1; S.uiSel = 0; } else { newGame(t, S.uiSel); S.ui = 0; } return; }
   if (S.ui == 5) { gBall(t); return; }
+  if (S.ui == 6) { if (S.uiSel == 0) S.req = 3; else { S.ui = 1; S.uiSel = 4; } return; }   // Aus / Zurueck
   if (S.ui >= 3) { S.ui = 1; return; }
   if (S.dead) { newGame(t, S.species); return; }
   if (S.menu == 0) gFeed(t); else if (S.menu == 1) gPlay(t); else if (S.menu == 2) gSleep(t);
@@ -857,6 +865,28 @@ static void drawSettings(int32_t t) {
   const char* cr = "(c) 2026 Daniel Lassak";
   T(cr, (W - tw(cr, 1)) / 2 + 1, 228, 1, S.uiSel == SET_N ? C_SEL : C_DIM);   // leuchtet, wenn der versteckte Platz gewaehlt ist
 }
+static void drawAkku(int32_t t) {   // Akku-Seite: Prozent, Verlauf der letzten 24 Stunden, Schlaf-Zaehler, Aus
+  (void)t;
+  R(0, 0, W, H, C_BGS);
+  char b[16]; if (S.batt < 0) strcpy(b, "--"); else snprintf(b, sizeof(b), "%d%%", S.batt);
+  int x = (W - tw(b, 3)) / 2; T(b, x, 12, 3, C_TXT);
+  if (S.chg) iconK(I_BOLT, x - 20, 14, 3, 2, C_SEL);
+  R(3, 46, 129, 78, C_PANEL);
+  T("24h", 8, 50, 1, C_DIM); T("jetzt", 127 - tw("jetzt", 1), 50, 1, C_DIM);
+  for (int i = 0; i < 24; i++) {
+    int v = S.blog[i], bx = 8 + i * 5;
+    if (v > 100) { R(bx, 116, 4, 1, C_DIM); continue; }
+    int bh = v * 56 / 100; if (bh < 1) bh = 1;
+    R(bx, 117 - bh, 4, bh, v >= 50 ? C_OK : (v >= 20 ? C_SEL : C_LOW));
+  }
+  char l[24];
+  if (S.slpFail == 0) strcpy(l, "Schlaf ok"); else snprintf(l, sizeof(l), "Schlaf: %d Fehler", S.slpFail);
+  T(l, 8, 130, 1, S.slpFail ? C_LOW : C_DIM);
+  snprintf(l, sizeof(l), "Tiefschlaf: %dx", S.deepN); T(l, 8, 142, 1, C_DIM);
+  R(3, 162, 129, 24, S.uiSel == 0 ? C_SEL : C_PANEL);
+  T("Aus", INFX - tw("Aus", 2) / 2, 167, 2, S.uiSel == 0 ? C_BG : C_TXT);
+  backRow(192, S.uiSel == 1, 24);
+}
 static void drawPicker(int32_t t) {   // Tier fuer das neue Spiel waehlen
   R(0, 0, W, H, C_BGS);
   for (int r = 0; r < 4; r++) {
@@ -940,6 +970,7 @@ static void drawScene(int32_t t) {
   else if (S.ui == 3) drawWifi(t);
   else if (S.ui == 4) drawUpdate(t);
   else if (S.ui == 5) drawBall(t);
+  else if (S.ui == 6) drawAkku(t);
   else drawGame(t);
 }
 
@@ -949,6 +980,7 @@ static void saveState() {
   prefs.putUInt("age", S.age); prefs.putUInt("seed", S.seed); prefs.putBool("sl", S.sleeping); prefs.putBool("dead", S.dead);
   prefs.putBool("sick", S.sick); prefs.putInt("pl", S.plastic); prefs.putInt("menu", S.menu); prefs.putUInt("now", S.now);
   prefs.putInt("sp", S.species); prefs.putInt("spd", S.speed); prefs.putInt("vol", S.vol); prefs.putInt("sens", S.sens); prefs.putUInt("mt", S.messT);
+  prefs.putBytes("bl", S.blog, sizeof(S.blog)); prefs.putInt("sf", S.slpFail); prefs.putInt("dn", S.deepN);
   prefs.end();
 }
 static bool loadState() {
@@ -960,6 +992,8 @@ static bool loadState() {
     S.age = prefs.getUInt("age", 0); S.seed = prefs.getUInt("seed", 12345); S.sleeping = prefs.getBool("sl", false); S.dead = prefs.getBool("dead", false);
     S.sick = prefs.getBool("sick", false); S.plastic = prefs.getInt("pl", 0); S.menu = prefs.getInt("menu", 0); S.now = prefs.getUInt("now", 0);
     S.species = prefs.getInt("sp", 0); S.speed = prefs.getInt("spd", 0); S.vol = prefs.getInt("vol", 2); S.sens = prefs.getInt("sens", 2); S.messT = prefs.getUInt("mt", 0);
+    if (prefs.isKey("bl")) prefs.getBytes("bl", S.blog, sizeof(S.blog));
+    S.slpFail = prefs.getInt("sf", 0); S.deepN = prefs.getInt("dn", 0);
   }
   prefs.end();
   return had;
@@ -975,6 +1009,9 @@ static bool loadState() {
 #include <esp_ota_ops.h>
 #include <esp_sleep.h>
 #include <driver/gpio.h>
+#include <esp_timer.h>
+#include <esp_attr.h>
+#include <sys/time.h>
 // ---- Sensoren: Schwellen je Stufe (Einstellungen -> Sensoren: aus, schwach, mittel, stark) ----
 #define DEBUG 0                                              // 1 = Messwerte im Seriellen Monitor (115200 Baud)
 static const float SHAKE_SOFT[4] = { 0, 1.2f, 0.9f, 0.7f };   // mittlere Abweichung von 1 g ueber 1 s: sanft
@@ -997,6 +1034,35 @@ static const int BTN_A_PIN = 11, BTN_B_PIN = 12;            // Tasten des StickS
 static const uint8_t BRIGHT_ON = 90, BRIGHT_DIM = 20;       // Helligkeit an / gedimmt
 static int idleA = 1, idleB = 1;                            // Pegel der Tasten, wenn nicht gedrueckt
 static const uint32_t AP_MAX_MS = 300000;                  // Einrichtungs-WLAN spaetestens nach 5 min zu
+static const uint32_t DEEP_MS = 600000;                     // Display so lange aus (10 min): Tiefschlaf, nur eine Taste weckt
+static bool slpGpio = true;                                 // Leichtschlaf mit Tasten-Wecken; bei Fehlern nur noch mit Zeitgeber
+static uint32_t bootMs = 0; static bool wokeDeep = false;
+static const uint32_t RTC_MAGIC = 0xDE1F0001;
+RTC_DATA_ATTR static uint32_t rtcMagic = 0, rtcSec = 0, rtcLog = 0;   // ueberleben den Tiefschlaf
+static uint32_t wallSec() { struct timeval tv; gettimeofday(&tv, nullptr); return (uint32_t)tv.tv_sec; }   // laeuft auch im Tiefschlaf weiter
+static void logPush(uint8_t v) { memmove(S.blog, S.blog + 1, sizeof(S.blog) - 1); S.blog[sizeof(S.blog) - 1] = v; }
+static void battLog() {   // jede Stunde den Akkustand merken; Luecken (Tiefschlaf) bleiben leer
+  if (S.batt < 0) return;
+  uint32_t ns = wallSec();
+  if (rtcLog == 0 || ns < rtcLog) { rtcLog = ns; logPush((uint8_t)S.batt); return; }
+  uint32_t hrs = (ns - rtcLog) / 3600; if (hrs == 0) return; if (hrs > 24) hrs = 24;
+  for (uint32_t i = 1; i < hrs; i++) logPush(255);
+  logPush((uint8_t)S.batt); rtcLog = ns;
+}
+// Bauteile abschalten, wenn die Funktion in dieser Version der Bibliothek existiert (sonst passiert nichts)
+template <class T> static auto imuSleep(T& i, int) -> decltype(i.sleep(), void()) { i.sleep(); }
+template <class T> static void imuSleep(T&, long) {}
+template <class T> static auto extOff(T& p, int) -> decltype(p.setExtOutput(false), void()) { p.setExtOutput(false); }
+template <class T> static void extOff(T&, long) {}
+static void deepSleepNow() {   // Tiefschlaf: nur eine Taste weckt, die Uhr laeuft im Zeitgeber des Chips weiter
+  S.deepN++; saveState();
+  rtcMagic = RTC_MAGIC; rtcSec = wallSec();
+  M5.Display.setBrightness(0); M5.Display.sleep();
+  imuSleep(M5.Imu, 0); extOff(M5.Power, 0);
+  uint64_t mask = (1ULL << BTN_A_PIN) | (idleA == idleB ? (1ULL << BTN_B_PIN) : 0);
+  esp_sleep_enable_ext1_wakeup(mask, idleA ? ESP_EXT1_WAKEUP_ANY_LOW : ESP_EXT1_WAKEUP_ANY_HIGH);
+  esp_deep_sleep_start();
+}
 
 // Uhrzeit als Sekunden seit 1970 (Ortszeit, ohne Zeitzonen-Umrechnung)
 static uint32_t daysFromCivil(int y, unsigned m, unsigned d) {
@@ -1091,14 +1157,18 @@ void setup() {
     uint32_t clk = rtcNow();
     if (clk < bt) { clk = S.now > bt ? S.now : bt; rtcSet(clk); }   // Uhr leer (neu oder Akku ganz leer): ab letztem Stand weiter
     if (S.now == 0 || S.now > clk) S.now = clk; else catchUp(clk);  // Zeit, in der er aus war, nachholen
-  } else if (S.now < bt) S.now = bt;                                // ohne Uhr steht die Zeit, solange er aus ist
+  } else {
+    if (S.now < bt) S.now = bt;                                     // ohne Uhr steht die Zeit, solange er aus ist
+    wokeDeep = esp_reset_reason() == ESP_RST_DEEPSLEEP && rtcMagic == RTC_MAGIC;
+    if (wokeDeep) { uint32_t el = wallSec() - rtcSec; if (el > 0 && el < 8 * 86400u) catchUp(S.now + el); rtcMagic = 0; }   // Tiefschlaf-Zeit nachholen
+  }
   S.wifiOk = wifiSaved();
   idleA = digitalRead(BTN_A_PIN); idleB = digitalRead(BTN_B_PIN);   // Ruhepegel der Tasten merken
   setCpuFrequencyMhz(80);                                            // reicht fuers Spiel und spart Strom
   Serial.printf("Delfino v%d: eingebaute Uhr %s, Spielzeit %02d:%02d, Startgrund %d\n", FW_VERSION, hasRtc ? "gefunden" : "nicht gefunden", hourOf(S.now), (int)((S.now / 60) % 60), (int)esp_reset_reason());
   saveState();
   M5.Mic.end(); M5.Speaker.end();                 // Mikro wird nicht gebraucht, Lautsprecher nur fuer Melodien
-  lastTick = lastDraw = lastSave = lastAct = lastImu = shWin = lastAlert = millis(); lastBatt = 0;
+  lastTick = lastDraw = lastSave = lastAct = lastImu = shWin = lastAlert = millis(); lastBatt = 0; bootMs = lastAct;
 }
 
 void loop() {
@@ -1106,6 +1176,7 @@ void loop() {
   uint32_t now = millis(); int32_t t = (int32_t)now;
   // Tasten: A (vorne) = ausfuehren, B (Seite) kurz = weiter, B lang = Einstellungen
   bool a = M5.BtnA.wasPressed(), bl = M5.BtnB.wasHold(), bn = !bl && M5.BtnB.wasClicked();
+  if (wokeDeep && now - bootMs < 800) { a = bl = bn = false; }   // die weckende Taste zaehlt nicht als Aktion
   if ((a || bl || bn) && !screenOn) { a = bl = bn = false; lastAct = now; }   // Display war aus: erster Druck weckt nur
   bool any = false;
   if (a) { pressOk(t); any = true; saveState(); }
@@ -1122,13 +1193,14 @@ void loop() {
     if (S.ui != 3) apStop();
   }
   if (S.req == 2) { S.req = 0; doUpdate(); lastTick = millis(); }
+  if (S.req == 3) { S.req = 0; saveState(); M5.Display.setBrightness(0); M5.Display.sleep(); M5.Power.powerOff(); delay(500); deepSleepNow(); }   // ganz aus (haengt er am Kabel: Tiefschlaf)
   // Zeit (mit Zeitraffer): jede Sekunde ein Spielschritt, die Uhr laeuft mit
   uint32_t tickMs = TICK_MS[S.speed];
   int n = 0;
   while (now - lastTick >= tickMs && n < 500) { gStep(); S.now++; lastTick += tickMs; n++; }
   if (now - lastTick >= tickMs) lastTick = now;
   // Akku alle 5 s abfragen
-  if (now - lastBatt >= 5000 || lastBatt == 0) { lastBatt = now; S.batt = M5.Power.getBatteryLevel(); S.chg = (int)M5.Power.isCharging() == 1; }
+  if (now - lastBatt >= 5000 || lastBatt == 0) { lastBatt = now; S.batt = M5.Power.getBatteryLevel(); S.chg = (int)M5.Power.isCharging() == 1; battLog(); }
   // Bewegung: 50x pro Sekunde messen, jede Sekunde auswerten
   bool ballMode = S.ui == 5 && screenOn;
   bool sensing = (S.ui == 0 && S.sens > 0 && screenOn) || ballMode;   // Display aus: Sensoren aus
@@ -1171,17 +1243,33 @@ void loop() {
     int target = (!keepOn && idle > DIM_MS) ? (S.sleeping ? 5 : BRIGHT_DIM) : BRIGHT_ON;
     if (target != curBright) { M5.Display.setBrightness(target); curBright = target; }
   }
-  if (now - lastSave >= 30000) { saveState(); lastSave = now; }
+  if (now - lastSave >= (screenOn ? 30000u : 600000u)) { saveState(); lastSave = now; }   // bei aus-Display selten: spart Strom und Flash
   if (screenOn) { delay(4); return; }   // kurze Pause: der Prozessor darf zwischendurch ruhen
 #if LEICHTSCHLAF
-  // Display aus: Prozessor schlaeft, wacht alle 4 s fuer die Spielzeit auf oder sofort bei Tastendruck
+  // Display aus: Prozessor schlaeft, wacht alle bis zu 30 s fuer die Spielzeit auf oder sofort bei Tastendruck.
+  // Nach 10 min ohne Bedienung: Tiefschlaf. Der Sketch prueft, ob der Schlaf wirklich klappt.
   if (playId < 0 && !apOn) {
-    esp_sleep_enable_timer_wakeup(4000000ULL);
-    gpio_wakeup_enable((gpio_num_t)BTN_A_PIN, idleA ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
-    gpio_wakeup_enable((gpio_num_t)BTN_B_PIN, idleB ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
-    esp_sleep_enable_gpio_wakeup();
-    esp_light_sleep_start();
-  }
+    if (M5.BtnA.isPressed() || M5.BtnB.isPressed()) { delay(20); return; }
+    idleA = digitalRead(BTN_A_PIN); idleB = digitalRead(BTN_B_PIN);   // Ruhepegel jetzt lesen, solange keine Taste gedrueckt ist
+    if (!keepOn && idle > DEEP_MS) deepSleepNow();
+    uint32_t wakeMs = TICK_MS[S.speed] * 400UL; if (wakeMs > 30000) wakeMs = 30000;
+    if (!slpGpio) wakeMs = 150;
+    esp_sleep_enable_timer_wakeup((uint64_t)wakeMs * 1000ULL);
+    if (slpGpio) {
+      gpio_wakeup_enable((gpio_num_t)BTN_A_PIN, idleA ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
+      gpio_wakeup_enable((gpio_num_t)BTN_B_PIN, idleB ? GPIO_INTR_LOW_LEVEL : GPIO_INTR_HIGH_LEVEL);
+      esp_sleep_enable_gpio_wakeup();
+    }
+    int64_t t0 = esp_timer_get_time();
+    esp_err_t er = esp_light_sleep_start();
+    int64_t dt = esp_timer_get_time() - t0;
+    bool glitch = slpGpio && esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_GPIO && dt < 20000 && digitalRead(BTN_A_PIN) == idleA && digitalRead(BTN_B_PIN) == idleB;
+    if (er != ESP_OK || glitch) {   // Schlaf abgelehnt oder sofort wieder wach: zaehlen, danach nur noch mit Zeitgeber schlafen
+      if (S.slpFail < 99) S.slpFail++;
+      if (slpGpio) { slpGpio = false; esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_GPIO); }
+      if (er != ESP_OK) delay(20);
+    }
+  } else delay(20);
 #else
   delay(20);
 #endif
