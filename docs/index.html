@@ -62,6 +62,14 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
   border: 0; border-radius: 999px; padding: 11px 18px; background: #ffcf4a; color: #062033; font: 700 14px var(--font);
   box-shadow: 0 8px 24px rgba(0,0,0,.4); cursor: pointer; max-width: calc(100vw - 32px);
 }
+.overlay { position: fixed; inset: 0; z-index: 9; background: rgba(2,12,20,.82); display: flex; align-items: center; justify-content: center; padding: 20px; }
+.overlay[hidden] { display: none; }
+.card { background: #0e2a40; border: 1px solid rgba(159,195,217,.35); border-radius: 22px; padding: 20px 20px 16px; max-width: 360px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.card h2 { margin: 0 0 10px; font-size: 19px; }
+.card ol { margin: 0 0 10px; padding-left: 20px; }
+.card li { margin: 6px 0; }
+.card p { margin: 0 0 14px; color: var(--dim); font-size: 13.5px; }
+.card .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
 .hint { color: var(--dim); font-size: 12.5px; text-align: center; max-width: 34ch; margin: 0; }
 @media (prefers-reduced-motion: reduce) { .key button:active, .key button.down { transform: none; } }
 </style>
@@ -76,8 +84,21 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 </div>
 <div class="extras">
   <button class="pill" id="motion">Schütteln einschalten</button>
+  <button class="pill" id="notif" hidden>Mitteilungen einschalten</button>
 </div>
 <button class="update" id="update" hidden>Neue Version da – antippen zum Laden</button>
+<div class="overlay" id="install" hidden>
+  <div class="card" role="dialog" aria-labelledby="inst-t">
+    <h2 id="inst-t">Delfino aufs iPhone holen</h2>
+    <ol>
+      <li>Tippe unten in Safari auf das <b>Teilen-Symbol</b> (Quadrat mit Pfeil nach oben).</li>
+      <li>Scrolle im Menü und wähle <b>„Zum Home-Bildschirm“</b>.</li>
+      <li>Tippe oben rechts auf <b>„Hinzufügen“</b>.</li>
+    </ol>
+    <p>Danach startet Delfino wie eine App, auch ohne Internet, und du kannst Mitteilungen erlauben.</p>
+    <div class="row"><button class="pill" id="inst-ok">Verstanden</button><button class="pill" id="inst-never">Nicht mehr zeigen</button></div>
+  </div>
+</div>
 <p class="hint" id="hint">Tipp: In Safari über Teilen → „Zum Home-Bildschirm“ wird Delfino zur App.</p>
 <script>
 const FW_VERSION = 0;
@@ -131,7 +152,7 @@ const C = {
   DESKD: rgb(0xb8, 0xbc, 0xc8),
   COFFEE: rgb(0x6b, 0x3e, 0x1f),
   FILTER: rgb(0xe0, 0xa0, 0x50),
-  EMBER: rgb(0xff, 0x6a, 0x2a), CASH: rgb(0x5a, 0xb8, 0x5a), CASHL: rgb(0xa8, 0xe0, 0x9a)
+  EMBER: rgb(0xff, 0x6a, 0x2a), CASH: rgb(0x5a, 0xb8, 0x5a), CASHL: rgb(0xa8, 0xe0, 0x9a), NET: rgb(0xc4, 0xa8, 0x6a), NETD: rgb(0x6e, 0x58, 0x34)
 };
 const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
   NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21, CUP: 22, CIG: 23, BROOM: 24, PARTY: 25 };
@@ -170,7 +191,7 @@ function newEgg(seed) {
   return { hunger: 80, fun: 80, energy: 80, health: 100, age: 0, seed: (seed >>> 0) || 12345,
     sleeping: false, dead: false, sick: false, plastic: 0, menu: 0, msgIcon: -1, msgNo: false, msgUntil: 0, anim: 0, animArg: 0, animStart: 0,
     now: 0, coolUntil: 0, snd: 0, sndStart: 0, species: 0, speed: 0, vol: 2, sens: 2,
-    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0, ballUsed: 0, messT: 0, blog: new Array(24).fill(255), slpFail: 0, deepN: 0 };
+    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0, ballUsed: 0, messT: 0, blog: new Array(24).fill(255), slpFail: 0, deepN: 0, first: 0, trawl: 0, trawlTaps: 0, trawlAt: 0 };
 }
 const clamp = (v) => (v < 0 ? 0 : v > 100 ? 100 : v);
 const MS = { CABLE: 0, CUP: 1, CONF: 2 };
@@ -206,19 +227,19 @@ function step(S) {
   if (S.dead) return;
   S.age += 1;
   const night = isNight(S);
-  if (S.sleeping) { S.energy += 0.15; S.hunger -= 0.02; S.fun -= 0.01; }
-  else { S.hunger -= 0.05; S.fun -= 0.04; S.energy -= night ? 0.06 : 0.02; }
-  S.fun -= 0.01 * S.plastic;
-  if (S.sick) S.fun -= 0.02;
+  if (S.sleeping) { S.energy += 0.15; S.hunger -= 0.005; S.fun -= 0.003; }
+  else { S.hunger -= 0.012; S.fun -= 0.010; S.energy -= night ? 0.015 : 0.006; }
+  S.fun -= 0.003 * S.plastic;
+  if (S.sick) S.fun -= 0.005;
   S.hunger = clamp(S.hunger); S.fun = clamp(S.fun); S.energy = clamp(S.energy);
   if (S.sleeping && S.energy >= 100 && !night) S.sleeping = false;
   if (!S.sleeping && night && S.energy < 40) S.sleeping = true;
-  if (rnd(S) < 40 && S.plastic < 5) { messSet(S, S.plastic, (S.age & 1) ? MS.CONF : MS.CABLE); S.plastic++; }
+  if (rnd(S) < 10 && S.plastic < 5) { messSet(S, S.plastic, S.species === 3 ? MS.CABLE : ((S.age & 1) ? MS.CONF : MS.CABLE)); S.plastic++; }
   const low = Math.min(S.hunger, S.fun, S.energy);
-  const risk = 2 + 3 * S.plastic + (low < 25 ? 6 : 0);
+  const risk = S.species === 3 ? 1 + (S.fun < 40 ? 6 : 0) + S.plastic : 1 + 2 * S.plastic + (low < 25 ? 4 : 0);
   if (rnd(S) < risk && !S.sick) S.sick = true;
-  if (low < 10 || S.sick) S.health -= (low < 10 ? 0.05 : 0) + (S.sick ? 0.04 : 0);
-  else S.health += 0.02;
+  if (low < 10 || S.sick) S.health -= (low < 10 ? 0.0015 : 0) + (S.sick ? 0.001 : 0);
+  else S.health += 0.01;
   S.health = clamp(S.health);
   if (S.health <= 0) { S.dead = true; S.sleeping = false; }
 }
@@ -227,12 +248,14 @@ function actFeed(S, t) {
   if (S.sleeping) { say(S, t, I.MOON); return; }
   if (S.hunger > 90) { say(S, t, S.species === 3 ? I.CUP : I.FORK, true); return; }
   S.hunger = clamp(S.hunger + 25); say(S, t, I.HEART); anim(S, t, A.FEED, S.age % 2);
+  if (S.species === 3) S.energy = clamp(S.energy + 8);
   if (S.species === 3 && S.plastic < 5) { messSet(S, S.plastic, MS.CUP); S.plastic++; }
 }
 function actPlay(S, t) {
   if (S.dead) return;
   if (S.sleeping) { say(S, t, I.MOON); return; }
-  if (S.sick) { say(S, t, S.species === 3 ? I.CIG : I.PAD, true); return; }
+  if (S.species === 3) { S.fun = clamp(S.fun + 20); S.hunger = clamp(S.hunger - 5); say(S, t, I.HEART); anim(S, t, A.PLAY); return; }
+  if (S.sick) { say(S, t, I.PAD, true); return; }
   if (S.energy < 15) { say(S, t, I.BOLT, true); return; }
   S.fun = clamp(S.fun + 20); S.energy = clamp(S.energy - 8); S.hunger = clamp(S.hunger - 5); say(S, t, I.HEART); anim(S, t, A.PLAY);
 }
@@ -262,7 +285,20 @@ function gShake(S, t, lvl) {
   S.coolUntil = t + 6000;
   if (S.sleeping) { S.sleeping = false; S.fun = clamp(S.fun - 5); say(S, t, -1); anim(S, t, A.STARTLE); return; }
   if (lvl === 1) { S.fun = clamp(S.fun + 10); say(S, t, I.HEART); anim(S, t, A.WAVES); }
-  else { S.fun = clamp(S.fun - 15); if (rnd(S) < 3333) S.sick = true; say(S, t, -1); anim(S, t, A.DIZZY); }
+  else { S.fun = clamp(S.fun - 15); const rs = rnd(S); if (S.species !== 3 && rs < 3333) S.sick = true; say(S, t, -1); anim(S, t, A.DIZZY); }
+}
+const TRAWL_MS = 3600, TRAWL_NEED = 10, TRAWL_END = 1400;
+function trawlStart(S, t) {
+  if (S.dead || S.sleeping || S.species === 3 || S.trawl || S.ui !== 0) return;
+  S.trawl = 1; S.trawlAt = t; S.trawlTaps = 0; S.msgIcon = -1; sfx(S, t, SND.ALERT);
+}
+function trawlTick(S, t) {
+  if (!S.trawl) return;
+  const ap = t - S.trawlAt;
+  if (S.trawl === 1 && ap >= TRAWL_MS) {
+    if (S.trawlTaps >= TRAWL_NEED) { S.trawl = 2; S.fun = clamp(S.fun + 15); say(S, t, I.HEART); sfx(S, t, A.WAKE); }
+    else { S.trawl = 3; S.health = clamp(S.health - 20); S.fun = clamp(S.fun - 20); say(S, t, -1); sfx(S, t, A.DIZZY); }
+  } else if (S.trawl >= 2 && ap >= TRAWL_MS + TRAWL_END) S.trawl = 0;
 }
 function catchUp(S, target) {
   if (target <= S.now) return;
@@ -299,25 +335,30 @@ const ANSWERS = [
   "Do it.|Fast.",
   "Frag die|Helfer.",
 ];
+function mix32(x) { x = (x ^ (x >>> 16)) >>> 0; x = Math.imul(x, 2246822519) >>> 0; x = (x ^ (x >>> 13)) >>> 0; x = Math.imul(x, 3266489917) >>> 0; return (x ^ (x >>> 16)) >>> 0; }
 function gBall(S, t) {
   if (S.ui !== 5 || (S.ballAns >= 0 && t < S.ballAt + 4000)) return;
   const NA = 18;
   if (S.ballUsed === (1 << NA) - 1) S.ballUsed = S.ballAns >= 0 ? (1 << S.ballAns) : 0;
   let left = 0; for (let i = 0; i < NA; i++) if (!((S.ballUsed >> i) & 1)) left++;
-  let k = rnd(S) % left, a = 0;
+  const tt = Math.floor(t) >>> 0;
+  let k = mix32((S.seed ^ Math.imul(tt, 2654435761)) >>> 0) % left, a = 0;
+  S.seed = mix32((S.seed + 0x9e3779b9 + tt) >>> 0);
   for (let i = 0; i < NA; i++) if (!((S.ballUsed >> i) & 1)) { if (k === 0) { a = i; break; } k--; }
   S.ballUsed |= 1 << a;
   S.ballAns = a; S.ballAt = t; sfx(S, t, A.DIZZY);
 }
-function pressLong(S) { if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui === 5) S.ui = 0; else S.ui = 1; }
+function pressLong(S) { if (S.ui === 0 && S.trawl) return; if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui === 5) S.ui = 0; else S.ui = 1; }
 function pressNext(S) {
+  if (S.ui === 0 && S.trawl) return;
   if (S.ui === 1) S.uiSel = (S.uiSel + 1) % (SET_ROWS.length + 1);
   else if (S.ui === 5) { S.ui = 1; S.uiSel = SET_ROWS.length; }
-  else if (S.ui === 2) S.uiSel = (S.uiSel + 1) % 5;
+  else if (S.ui === 2) S.uiSel = (S.uiSel + 1) % (S.first ? 4 : 5);
   else if (S.ui === 6) S.uiSel = (S.uiSel + 1) % 2;
   else if (S.ui === 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
 function pressOk(S, t) {
+  if (S.ui === 0 && S.trawl) { if (S.trawl === 1 && S.trawlTaps < 40) S.trawlTaps++; return; }
   if (S.ui === 1) {
     const it = SET_ROWS[S.uiSel];
     if (it === 0) { S.ui = 2; S.uiSel = S.species; }
@@ -335,7 +376,7 @@ function pressOk(S, t) {
   if (S.ui === 5) { gBall(S, t); return; }
   if (S.ui === 6) { if (S.uiSel === 0) S.req = 3; else { S.ui = 1; S.uiSel = 4; } return; }
   if (S.ui >= 3) { S.ui = 1; return; }
-  if (S.dead) { newGame(S, t, S.species); return; }
+  if (S.dead) { S.ui = 2; S.uiSel = S.species; S.first = 1; return; }
   if (S.menu === 0) actFeed(S, t); else if (S.menu === 1) actPlay(S, t); else if (S.menu === 2) actSleep(S, t);
   else if (S.menu === 3) actFish(S, t); else actMedic(S, t);
 }
@@ -497,39 +538,19 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   const icon = (id, x, y, s, c) => iconK(id, x, y, s, 1, c);
   const kW = (id, kn, kd) => dv(icW(id) * kn, kd), kH = (id, kn, kd) => dv(icH(id) * kn, kd);
   const iconNo = (id, x, y, s) => { const w = icW(id), hh = icH(id); for (let i = 0; i < w; i++) R(x + i * s, y + dv(i * hh, w) * s, s + 1, s + 1, C.LOW); };
-  let gkn = 5, gkd = 4, gcx = 0, gcy = 0, gParty = false, gHip = 0;
+  let gkn = 5, gkd = 4, gcx = 0, gcy = 0, gParty = false, gRot = false, gFlip = false, gHip = 0;
   const sc = (v) => Math.floor(v * gkn / gkd);
-  const SR = (dx, dy, w, h, c) => { const x0 = sc(dx), y0 = sc(dy); R(gcx + x0, gcy + y0, sc(dx + w) - x0, sc(dy + h) - y0, c); };
+  const SR = (dx, dy, w, h, c) => {
+    if (gRot) { const ox = dy + 43, oy = -(dx + w), ow = h; h = w; w = ow; dx = ox; dy = oy; }
+    else if (gFlip) dy = -(dy + h);
+    const x0 = sc(dx), y0 = sc(dy); R(gcx + x0, gcy + y0, sc(dx + w) - x0, sc(dy + h) - y0, c);
+  };
+  const SEr = (x, y, rx, ry, c, a, b) => { for (let d = a; d <= b; d++) { const w = isq(dv(rx * rx * (ry * ry - d * d), ry * ry)); R(x - w, y + d, 2 * w + 1, 1, c); } };
+  const SE = (x, y, rx, ry, c) => SEr(x, y, rx, ry, c, -ry, ry);
   const drawPlastic = (i, x, y) => {
     if (i % 2 === 0) { R(x + 1, y, 4, 2, C.CAP); R(x, y + 2, 6, 11, C.PLA); R(x, y + 6, 6, 2, C.CAP); }
     else { R(x, y, 10, 2, C.BAG); R(x + 1, y + 2, 8, 5, C.BAG); R(x, y + 7, 3, 3, C.BAG); R(x + 7, y + 7, 3, 3, C.BAG); }
   };
-  const HPOLE = [
-    [24, -24, 9, 13, HC.FURD],
-    [22, -12, 8, 13, HC.FURD],
-    [13, -22, 9, 12, HC.FUR],
-    [11, -11, 8, 12, HC.FUR],
-    [19, 1, 10, 4, HC.PINKD],
-    [8, 1, 10, 4, HC.PINK],
-    [-6, -50, 22, 22, HC.FUR],
-    [8, -46, 18, 24, HC.FUR],
-    [-5, -50, 21, 19, HC.VEST],
-    [10, -46, 10, 18, HC.VEST],
-    [2, -50, 3, 19, HC.REFL],
-    [12, -46, 3, 18, HC.REFL],
-    [0, -34, 6, 9, HC.FUR],
-    [3, -26, 6, 8, HC.FUR],
-    [5, -19, 7, 4, HC.PINK]
-  ];
-  const HBUTT = [
-    [22, -45, 12, 2, HC.FUR],
-    [19, -43, 18, 2, HC.FUR],
-    [18, -41, 20, 15, HC.FUR],
-    [19, -26, 18, 2, HC.FUR],
-    [22, -24, 12, 2, HC.FUR],
-    [35, -39, 3, 12, HC.FURD],
-    [37, -42, 3, 3, HC.PINK]
-  ];
   const HPAL = [C.HFUR, C.HFURD, C.HCREAM, C.HPINK, C.HPINKD, C.HVEST, C.HVESTD, C.REFL, C.EYE, C.WHITE, C.HMOUTH, C.HELM, C.HELMB, C.HELMS, C.CASE, C.ALU, C.ALUD, C.GAFFA, C.MARK, C.WHEEL];
   const hcol = (k, sk, dead) => {
     if (dead && k === HC.FUR) return C.DEAD;
@@ -570,7 +591,6 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       const left = 6 - dv(ap, 150); if (left > 0) drawMess(MS.CONF, sx, sy, left);
       const bx = sx - 4 + (dv(ap, 100) % 2) * 8, by = sy - 22;
       for (let k = 0; k < 11; k++) R(bx + 12 - k, by + k * 2, 2, 2, C.FILTER);
-      R(bx - 2, by + 21, 10, 2, C.HELMB);
       R(bx - 4, by + 23, 14, 6, C.SEL); for (let k = 0; k < 4; k++) R(bx - 3 + k * 3, by + 26, 1, 3, C.FILTER);
     }
   }
@@ -590,8 +610,10 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     const rdx = [-1, -2, -1, 1, 2, 1], rdy = [0, -1, -1, -1, -1, 0], r0 = [12, 7, 8, 8, 7, 12];
     for (let i = 0; i < 6; i++) { const L = 2 + ((dv(ap, 120) + i) % 2) * 3; for (let s = 0; s < L; s++) R(cx + rdx[i] * (r0[i] + s), by + 10 + rdy[i] * (r0[i] + s), 1, 1, (i % 2) ? C.WARM : C.WHITE); }
     for (let k = 0; k < 8; k++) {
-      const pr = (dv(ap, 3) + k * 47) % 140, x = (k % 2) ? 135 - pr : pr - 10, y = 70 + (k * 29) % 110 + ((dv(ap, 120) + k) % 2);
-      R(x, y, 10, 5, C.CASHL); R(x + 1, y + 1, 8, 3, C.CASH); R(x + 4, y + 1, 2, 3, C.CASHL);
+      const ph = (ap + k * 210) % 1680, u = dv(ph, 17), sx = (k % 2) ? 146 : -12, tx = 44 + (k * 11) % 36;
+      const x = sx + dv((tx - sx) * u, 100), y = 96 + (k * 13) % 40 - dv(70 * u, 100) + dv(150 * u * u, 10000);
+      if (dv(ph, 90) % 2) { R(x, y, 10, 5, C.CASHL); R(x + 1, y + 1, 8, 3, C.CASH); R(x + 4, y + 1, 2, 3, C.CASHL); }
+      else { R(x + 2, y - 1, 6, 7, C.CASHL); R(x + 3, y, 4, 5, C.CASH); R(x + 4, y + 2, 2, 1, C.CASHL); }
     }
     for (let i = 0; i < 2; i++) { const nx = cx - 36 + i * 10, ny = cy - 100 - ((dv(ap, 30) + i * 15) % 20); R(nx, ny, 1, 6, C.TXT); R(nx - 2, ny + 5, 3, 2, C.TXT); R(nx + 1, ny, 2, 1, C.TXT); }
   }
@@ -623,36 +645,56 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       x += hwW(g) + 1;
     }
   }
+  function hamsterPole(cx, cy) {
+    const hp = gHip, f = hcol(HC.FUR, false, false), fd = hcol(HC.FURD, false, false), pk = hcol(HC.PINK, false, false), pd = hcol(HC.PINKD, false, false), v = hcol(HC.VEST, false, false), vd = hcol(HC.VESTD, false, false), rf = hcol(HC.REFL, false, false);
+    SE(cx + 12, cy - 14, 8, 13, fd); SE(cx + 10, cy + 1, 10, 4, pd);
+    SE(cx + 44 + hp, cy - 33 - hp, 3, 3, pd);
+    SE(cx + 27 + hp, cy - 34 - hp, 16, 16, fd); SE(cx + 26 + hp, cy - 35 - hp, 15, 15, f);
+    SE(cx + 19, cy - 17, 12, 16, f); SE(cx + 18, cy - 3, 8, 7, f); SE(cx + 15, cy + 2, 11, 4, pk);
+    SE(cx + 4, cy - 46, 20, 20, fd); SE(cx + 3, cy - 47, 19, 19, f);
+    SE(cx - 1, cy - 46, 15, 16, vd); SE(cx - 2, cy - 47, 15, 15, v);
+    SEr(cx - 2, cy - 47, 15, 15, rf, -8, -6); SEr(cx - 2, cy - 47, 15, 15, rf, 2, 4);
+    SE(cx - 14, cy - 30, 7, 11, f); SE(cx - 14, cy - 20, 6, 5, pk);
+  }
   function hamster(cx, cy, mo, sk, dead, t, an, full) {
     gcx = cx; gcy = cy;
-    if (gParty) {
-      for (const e of HPOLE) SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead));
-      for (const e of HBUTT) SR(e[0] + gHip, e[1] - gHip, e[2], e[3], hcol(e[4], sk, dead));
-      gcx = cx - 22; gcy = cy + 18;
-    }
-    for (const e of HAM) { if (gParty && e[1] > -54) continue; SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead)); }
-    if (full && !gParty) stencilName(cx, cy);
+    const lying = mo === M.DEAD, bored = sk && !dead && mo !== M.SLEEP && !gParty;
+    sk = false;
+    if (gParty) { hamsterPole(cx, cy); gcx = cx - 28; gcy = cy + 14; }
+    gRot = lying;
+    for (const e of HAM) { if (gParty && e[1] > -54) continue; if (lying && e[1] >= 1) continue; SR(e[0], e[1], e[2], e[3], hcol(e[4], sk, dead)); }
+    if (full && !gParty && !lying) stencilName(cx, cy);
     const blink = (t % 3200) < 140, E = C.EYE, fur = hcol(HC.FUR, sk, dead);
     if (mo === M.DEAD) { for (let i = 0; i < 8; i += 2) { SR(-13 + i, -70 + i, 2, 2, E); SR(-8 - i, -70 + i, 2, 2, E); SR(6 + i, -70 + i, 2, 2, E); SR(11 - i, -70 + i, 2, 2, E); } }
     else if (an === A.DIZZY) { for (let e = 0; e < 2; e++) { const o = e * 19; SR(-14 + o, -71, 9, 9, E); SR(-12 + o, -69, 5, 5, fur); SR(-11 + o, -68, 3, 3, E); } }
     else if (an === A.STARTLE) { SR(-14, -72, 9, 10, E); SR(5, -72, 9, 10, E); SR(-13, -71, 3, 3, C.WHITE); SR(6, -71, 3, 3, C.WHITE); }
+    else if (bored && an === A.NONE) {
+      const lx = (Math.floor(t / 900) % 3) - 1, furd = hcol(HC.FURD, false, false);
+      SR(-13, -70, 7, 8, E); SR(6, -70, 7, 8, E); SR(-11 + lx, -65, 2, 2, C.WHITE); SR(8 + lx, -65, 2, 2, C.WHITE);
+      SR(-14, -71, 9, 5, fur); SR(5, -71, 9, 5, fur); SR(-14, -66, 9, 1, furd); SR(5, -66, 9, 1, furd);
+    }
+    else if (mo === M.HAPPY && !blink && Math.floor(t / 1500) % 3 === 0) { SR(-14, -65, 3, 2, E); SR(-12, -67, 5, 2, E); SR(-8, -65, 3, 2, E); SR(5, -65, 3, 2, E); SR(7, -67, 5, 2, E); SR(11, -65, 3, 2, E); }
     else if (mo === M.SLEEP || blink) { SR(-13, -66, 7, 2, E); SR(6, -66, 7, 2, E); }
     else { SR(-13, -70, 7, 8, E); SR(6, -70, 7, 8, E); SR(-12, -69, 3, 3, C.WHITE); SR(7, -69, 3, 3, C.WHITE); SR(-9, -65, 1, 1, C.WHITE); SR(10, -65, 1, 1, C.WHITE); }
     if (mo === M.SAD && !blink && an === A.NONE) SR(-11, -62, 2, 3, C.BUBBLE);
     const Mo = C.HMOUTH;
     if (an === A.STARTLE) SR(-2, -57, 4, 3, Mo);
-    else if (mo === M.HAPPY || mo === M.OK) { SR(-5, -56, 4, 1, Mo); SR(1, -56, 4, 1, Mo); SR(-1, -57, 2, 1, Mo); if (mo === M.HAPPY) { SR(-19, -61, 5, 2, C.HPINK); SR(14, -61, 5, 2, C.HPINK); } }
+    else if (bored && an === A.NONE) { if ((t % 6000) < 1300) { SR(-5, -58, 10, 7, Mo); SR(-3, -54, 6, 2, C.HPINK); } else SR(-3, -55, 6, 1, Mo); }
+    else if (mo === M.HAPPY) { SR(-8, -58, 2, 2, Mo); SR(6, -58, 2, 2, Mo); SR(-6, -56, 12, 1, Mo); SR(-5, -55, 10, 3, Mo); SR(-2, -53, 4, 2, C.HPINK); SR(-21, -62, 7, 3, C.HPINK); SR(14, -62, 7, 3, C.HPINK); }
+    else if (mo === M.OK) { SR(-5, -56, 4, 1, Mo); SR(1, -56, 4, 1, Mo); SR(-1, -57, 2, 1, Mo); }
     else if (mo === M.SAD) { SR(-4, -55, 8, 1, Mo); SR(-5, -54, 1, 1, Mo); SR(4, -54, 1, 1, Mo); }
     else if (mo === M.SICK) { SR(-4, -55, 3, 1, Mo); SR(-1, -56, 3, 1, Mo); SR(2, -55, 3, 1, Mo); }
     else if (mo === M.SLEEP) SR(-2, -56, 4, 1, Mo);
     else SR(-4, -55, 8, 1, Mo);
-    gcx = cx; gcy = cy;
+    gRot = false; gcx = cx; gcy = cy;
     if (!full) return;
-    if (sk) { SR(-46, -86, 2, 8, C.LOW); SR(-49, -83, 8, 2, C.LOW); }
+    if (bored && an === A.NONE) { const n = Math.floor(t / 500) % 4; for (let i = 0; i < n; i++) SR(28 + i * 7, -96 - i * 3, 4, 4, C.TXT); }
+    if (mo === M.HAPPY && an === A.NONE && !gParty) { const p = Math.floor(t / 40) % 100; if (p < 50) icon(I.HEART, cx + 28 + (dv(p, 10) % 2) * 3, cy - 98 - dv(p, 2), 1, C.CHEEK); }
     if (mo === M.SLEEP && an !== A.SLEEP) { const z = (Math.floor(t / 700) % 2) === 1; T(z ? 'Z' : 'z', cx + sc(26), cy + sc(-86) + (z ? 0 : 4), 2, C.TXT); }
   }
   function drawPet(S, sp, cx, cy, mo, sk, dead, t, an, ap, full) {
     if (sp === 3) { hamster(cx, cy, mo, sk, dead, t, an, full); return; }
+    gFlip = dead && full;
     gcx = cx; gcy = cy;
     const P = SPC[sp];
     let mc = C.EYE, eb;
@@ -690,18 +732,20 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     else if (an === A.DIZZY) { SR(ex - 1, ey - 1, 6, 6, C.EYE); SR(ex, ey, 4, 4, eb); SR(ex + 1, ey + 1, 2, 2, C.EYE); }
     else if (an === A.STARTLE) { SR(ex - 1, ey - 2, 6, 7, C.EYE); SR(ex, ey - 1, 2, 2, C.WHITE); }
     else if (mo === M.SLEEP || blink) SR(ex - 1, ey + 2, 6, 2, C.EYE);
-    else { SR(ex, ey, 4, 5, C.EYE); SR(ex + 1, ey + 1, 1, 1, C.WHITE); }
+    else { SR(ex, ey, 4, 5, C.EYE); SR(ex + 1, ey + 1, mo === M.HAPPY ? 2 : 1, mo === M.HAPPY ? 2 : 1, C.WHITE); }
     if (mo === M.SAD && !blink && an === A.NONE) SR(ex + 1, ey + 6, 2, 3, C.BUBBLE);
     if (an === A.FEED && ap >= 600) { if (dv(ap, 150) % 2 === 0) SR(mx + 2, my - 1, ml - 1, 3, mc); else SR(mx, my, ml, 1, mc); }
     else if (an === A.STARTLE) SR(mx + 3, my - 1, ml < 5 ? ml : 5, 3, mc);
-    else if (mo === M.HAPPY) { SR(mx, my, ml, 1, mc); SR(mx - 2, my - 1, 2, 1, mc); SR(P.chx, P.chy, 5, 2, C.CHEEK); }
+    else if (mo === M.HAPPY) { SR(mx, my, ml, 1, mc); SR(mx - 2, my - 1, 2, 1, mc); SR(mx + ml, my - 1, 2, 1, mc); SR(mx + 1, my + 1, ml - 2, 1, mc); SR(P.chx, P.chy, 7, 3, C.CHEEK); }
     else if (mo === M.OK) SR(mx, my, ml, 1, mc);
     else if (mo === M.SAD) { SR(mx, my, ml, 1, mc); SR(mx - 2, my + 1, 2, 1, mc); }
     else if (mo === M.SICK) { SR(mx, my + 1, dv(ml, 2), 1, mc); SR(mx + dv(ml, 2), my, ml - dv(ml, 2), 1, mc); }
     else if (mo === M.SLEEP) SR(mx, my, ml - 2, 1, mc);
     else SR(mx, my + 1, ml, 1, mc);
+    gFlip = false;
     if (!full) return;
     if (sk) { SR(-46, -30, 2, 8, C.LOW); SR(-49, -27, 8, 2, C.LOW); }
+    if (mo === M.HAPPY && an === A.NONE) { const p = Math.floor(t / 40) % 100; if (p < 50) icon(I.HEART, cx + sc(P.ex) + 8 + (dv(p, 10) % 2) * 3, cy + sc(P.ty) - 6 - dv(p, 2), 1, C.CHEEK); }
     if (!S.sleeping && !dead) { const p = Math.floor(t / 50) % 40; if (p < 12) R(cx + sc(P.hx) + ((p >> 2) % 2), cy + sc(P.hy) - p, 2, 2, C.BUBBLE); }
     if (mo === M.SLEEP && an !== A.SLEEP) { const z = (Math.floor(t / 700) % 2) === 1; T(z ? 'Z' : 'z', cx + sc(34), cy + sc(-30) + (z ? 0 : 4), 2, C.TXT); }
   }
@@ -723,10 +767,22 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     const ids = [S.species === 3 ? I.CUP : I.FORK, S.species === 3 ? I.CIG : I.PAD, S.sleeping ? I.SUN : I.MOON, S.species === 3 ? I.BROOM : I.ROD, S.species === 3 ? I.PARTY : I.KIT], cols = [C.FOOD, C.PLAY, C.SEL, C.OK, C.CHEEK];
     for (let i = 0; i < 5; i++) {
       const x = 1 + i * 27, id = ids[i], sel = S.menu === i;
-      const warn = (i === 3 && S.plastic + (an === A.FISH ? 1 : 0) >= 3) || (i === 4 && sk);
       R(x, MENUY, 26, 22, sel ? C.SEL : C.PANEL);
       iconK(id, x + dv(26 - kW(id, 3, 2), 2), MENUY + dv(22 - kH(id, 3, 2), 2), 3, 2, sel ? C.BG : cols[i]);
-      if (warn) { R(x + 19, MENUY, 7, 7, C.BG); R(x + 20, MENUY + 1, 5, 5, C.LOW); }
+    }
+  }
+  function drawTrawl(S, t, tap) {
+    const ap = t - S.trawlAt; let e = ap - TRAWL_MS; if (e > TRAWL_END) e = TRAWL_END;
+    const nx = S.trawl === 1 ? 140 - dv(ap * 72, TRAWL_MS) : 68 - dv(e * 190, TRAWL_END);
+    for (let k = 0; k <= 84; k += 7) R(nx + k, 100, 1, 106, C.NET);
+    for (let k = 0; k <= 106; k += 7) R(nx, 100 + k, 85, 1, C.NET);
+    R(nx, 98, 85, 3, C.NETD); R(nx, 204, 85, 3, C.NETD);
+    for (let k = 0; k < 4; k++) R(nx + 4 + k * 24, 93, 6, 6, C.LOW);
+    R(nx + 85, 99, 45, 1, C.NETD); R(nx + 85, 205, 45, 1, C.NETD);
+    if (S.trawl === 1) {
+      R(0, 24, W, 11, (dv(t, 150) % 2) ? C.LOW : C.BG);
+      const w = 'NETZ! TIPPEN!'; T(w, dv(W - tw(w, 1), 2), 26, 1, C.TXT);
+      for (let i = 0; i < TRAWL_NEED; i++) R(4 + i * 13, 38, 11, 5, i < tap ? C.OK : C.PANEL);
     }
   }
   function drawGame(S, t) {
@@ -760,14 +816,23 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     else if (an === A.WAVES && ham) dx = (dv(ap, 120) % 2) * 6 - 3;
     if (ham) { gkn = 1; gkd = 1; } else { gkn = 5; gkd = 4; }
     const party = ham && an === A.MEDIC;
-    const cx = DCX + dx, bob = (!ham && !S.sleeping && !S.dead && (Math.floor(t / 500) % 2) === 1) ? 2 : 0, cy = (ham ? (party ? 203 : HDCY) : DCY) + bob + jy;
+    let tz = 0, tdx = 0, tap = 0;
+    const trawl = S.trawl && !ham;
+    if (trawl) {
+      tap = S.trawlTaps > TRAWL_NEED + 2 ? TRAWL_NEED + 2 : S.trawlTaps;
+      let e = t - S.trawlAt - TRAWL_MS; if (e > TRAWL_END) e = TRAWL_END;
+      if (S.trawl === 1) tz = -tap * 4; else if (S.trawl === 2) tz = -dv(tap * 4 * (TRAWL_END - e), TRAWL_END); else tdx = (dv(e, 60) % 2) * 6 - 3;
+    }
+    const cx = DCX + dx + tdx, bob = (!ham && !S.sleeping && !S.dead && (Math.floor(t / 500) % 2) === 1) ? 2 : 0, cy = (ham ? (party ? 203 : (S.dead ? HDCY - 34 : HDCY)) : DCY) + bob + jy + tz;
     const pend = an === A.MEDIC && ap < 500 && !ham;
     if (pend && mo !== M.SLEEP) mo = M.SICK;
     const sk = (S.sick || pend) && !S.dead;
     if (party) { partyLights(ap); partyPole(cx); }
+    if (ham && S.dead) R(cx - 52, cy + 36, 104, 3, C.DESKD);
     gParty = party; gHip = party ? (dv(ap, 150) % 2) * 3 : 0;
     drawPet(S, S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
     gParty = false; gHip = 0;
+    if (trawl) drawTrawl(S, t, tap);
     const P = SPC[S.species];
     if (an === A.FEED) {
       if (ham) {
@@ -779,9 +844,9 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       }
     } else if (an === A.PLAY) {
       if (ham) {
-        const mx = cx + sc(3), my = cy + sc(-56);
-        R(mx, my, 3, 2, C.FILTER); R(mx + 3, my, 10, 2, C.WHITE); R(mx + 13, my, 2, 2, (dv(ap, 150) % 2) ? C.EMBER : C.LOW);
-        for (let i = 0; i < 4; i++) { const k = (dv(ap, 8) + i * 12) % 36; R(mx + 14 + ((dv(k, 6) + i) % 2) * 2, my - 3 - k, 2, 2, C.DESKD); }
+        const mx = cx + 2, my = cy - 58;
+        R(mx, my, 8, 4, C.FILTER); R(mx + 8, my, 22, 4, C.WHITE); R(mx + 8, my + 3, 22, 1, C.REFL); R(mx + 7, my, 1, 4, C.LOW); R(mx + 30, my, 4, 4, (dv(ap, 150) % 2) ? C.EMBER : C.LOW);
+        for (let i = 0; i < 4; i++) { const k = (dv(ap, 8) + i * 12) % 40; R(mx + 31 + ((dv(k, 6) + i) % 2) * 3, my - 5 - k, 3, 3, C.DESKD); }
       } else {
         const bb = dv((ap % 400) * (400 - ap % 400), 4000);
         iconK(I.BALL, cx + sc(P.bx) - 2, cy + sc(P.by) - kH(I.BALL, 3, 2) - bb, 3, 2, C.LOW);
@@ -811,7 +876,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       icon(id, x, y, 2, C.TXT);
       if (S.msgNo) iconNo(id, x, y, 2);
     }
-    if (!ham) {
+    if (!ham && !S.dead) {
       const name = NAMES[S.species], nw = tw(name, 2) + 4;
       R(CORNX - nw + 1, NAMEY, nw - 2, 18, C.SEL); R(CORNX - nw, NAMEY + 1, nw, 16, C.SEL);
       T(name, CORNX - nw + 3, NAMEY + 2, 2, C.BG);
@@ -821,7 +886,13 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       if (ham) { const ax = CORNX - tw(buf, 1) - 9; icon(I.CLOCK, ax, 204, 1, C.DIM); T(buf, ax + 9, 204, 1, C.DIM); }
       else { const cw = kW(I.CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2; iconK(I.CLOCK, ax, AGEY + 3, 3, 2, C.DIM); T(buf, ax + cw + 3, AGEY, 2, C.DIM); }
     }
-    drawMenu(S, an, sk);
+    if (S.dead) {
+      const nm = NAMES[S.species], s2 = tw(nm, 2) <= 125 ? 2 : 1;
+      T('Du hast', dv(W - tw('Du hast', 1), 2), 164, 1, C.TXT);
+      T(nm, dv(W - tw(nm, s2), 2), s2 === 2 ? 175 : 179, s2, C.SEL);
+      T('im Stich gelassen', dv(W - tw('im Stich gelassen', 1), 2), 195, 1, C.TXT);
+      R(3, 210, 129, 24, C.SEL); T('Neues Spiel', dv(W - tw('Neues Spiel', 1), 2), 218, 1, C.BG);
+    } else drawMenu(S, an, sk);
   }
   const drawBars = (x, y, n, on, off) => { for (let i = 0; i < 3; i++) R(x + i * 7, y + 12 - i * 4, 5, 4 + i * 4, i < n ? on : off); };
   const backRow = (y, sel, h = 26) => { R(3, y, 129, h, sel ? C.SEL : C.PANEL); iconK(I.BACK, INFX - dv(kW(I.BACK, 3, 2), 2), y + dv(h - kH(I.BACK, 3, 2), 2), 3, 2, sel ? C.BG : C.TXT); };
@@ -874,7 +945,8 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       else { gkn = 1; gkd = 2; drawPet(S, r, INFX, y + 18, M.HAPPY, false, false, t, A.NONE, 0, false); }
       T(NAMES[r], INFX - dv(tw(NAMES[r], 1), 2), y + 37, 1, sel ? C.BG : C.TXT);
     }
-    backRow(4 + 4 * 48, S.uiSel === 4);
+    if (S.first) T('Waehle dein Tier', dv(W - tw('Waehle dein Tier', 1), 2), 210, 1, C.TXT);
+    else backRow(4 + 4 * 48, S.uiSel === 4);
   }
   function drawWifi(S, t) {
     R(0, 0, W, H, C.BGS);
@@ -914,7 +986,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     const ap = Math.floor(t - S.ballAt), think = S.ballAns >= 0 && ap >= 0 && ap < 2500;
     R(4, 14, 127, 86, C.TXT); R(2, 16, 131, 82, C.TXT); R(62, 100, 12, 3, C.TXT); R(64, 103, 8, 2, C.TXT); R(66, 105, 4, 2, C.TXT);
     if (think) { const n = dv(ap, 250) % 3 + 1; for (let i = 0; i < n; i++) R(52 + i * 12, 54, 6, 6, C.BG); }
-    else if (S.ballAns < 0) T('?', 58, 47, 3, C.BG);
+    else if (S.ballAns < 0 || ap >= 10500) T('?', 58, 47, 3, C.BG);
     else {
       const lines = ANSWERS[S.ballAns].split('|'), n = lines.length, y = 57 - n * 9 + 1;
       for (let i = 0; i < n; i++) T(lines[i], 67 - dv(tw(lines[i], 2), 2), y + i * 18, 2, C.BG);
@@ -970,15 +1042,16 @@ SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, 
   const KEY = 'delfino-web';
   const SPEEDF = [1, 10, 50];
   const clockNow = () => Math.floor(Date.now() / 1000) - new Date().getTimezoneOffset() * 60;
-  let S = newEgg((Math.random() * 4294967296) >>> 0);
+  let S = newEgg((Math.random() * 4294967296) >>> 0), hadSave = false;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { const o = JSON.parse(raw); if (o && typeof o.hunger === 'number') S = Object.assign(S, o, { msgIcon: -1, msgUntil: 0, anim: 0, snd: 0, coolUntil: 0, ui: 0, req: 0 }); }
+    if (raw) { const o = JSON.parse(raw); if (o && typeof o.hunger === 'number') { S = Object.assign(S, o, { msgIcon: -1, msgUntil: 0, anim: 0, snd: 0, coolUntil: 0, ui: 0, req: 0, first: 0, trawl: 0 }); hadSave = true; } }
   } catch (e) {}
+  if (!hadSave) { S.ui = 2; S.first = 1; }   // erster Start: erst ein Tier waehlen
   // Zeit, in der die Seite zu war, nachholen (das Tier hat geschlafen, 10x langsamer)
   const resume = () => {
     if (!S.now) S.now = clockNow();
-    if (S.lastSeen) { const el = (Date.now() - S.lastSeen) / 1000; if (el > 2) catchUp(S, S.now + Math.floor(el * SPEEDF[S.speed])); }
+    if (S.lastSeen) { const el = (Date.now() - S.lastSeen) / 1000; if (el > 2) catchUp(S, S.now + Math.floor(el)); }   // echte Zeit, das Tier hat geschlafen
     S.lastSeen = Date.now();
   };
   resume();
@@ -1031,7 +1104,8 @@ SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, 
 
   // Tasten: A = ausfuehren, B = weiter, B lang = Menue
   const now = () => performance.now();
-  const after = () => { if (!S.snd) sfx(S, now(), SND.CLICK); save(); };
+  let lastAct = performance.now();
+  const after = () => { lastAct = now(); if (!S.snd) sfx(S, now(), SND.CLICK); save(); };
   const doNext = () => { audio(); pressNext(S); after(); };
   const doOk = () => { audio(); pressOk(S, now()); after(); };
   const doLong = () => { audio(); pressLong(S); after(); };
@@ -1049,12 +1123,71 @@ SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, 
     else if (k === 'b' || k === 'arrowright') { e.preventDefault(); doNext(); }
     else if (k === 'm') { e.preventDefault(); doLong(); }
   });
-  if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) $('hint').hidden = true;
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) $('hint').hidden = true;
+  // iPhone im Browser: Anleitung, wie Delfino auf den Home-Bildschirm kommt
+  const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  let hideInst = false; try { hideInst = localStorage.getItem('delfino-install-hide') === '1'; } catch (e) {}
+  if (isIos && !standalone && !hideInst) $('install').hidden = false;
+  $('inst-ok').addEventListener('click', () => { $('install').hidden = true; });
+  $('inst-never').addEventListener('click', () => { $('install').hidden = true; try { localStorage.setItem('delfino-install-hide', '1'); } catch (e) {} });
 
-  let last = performance.now(), acc = 0, lastSave = 0;
+  // Mitteilungen: "Hamsti hat Hunger", "Da riecht was komisch" (Tier gestorben).
+  // Ohne eigenen Server kann das Handy nur melden, solange die App noch laeuft oder das Geraet Zeitplan-Mitteilungen kann.
+  const SHORT = ['Delfino', 'Orki', 'Schildi', 'Hamsti'];
+  let notifOn = false; try { notifOn = 'Notification' in window && Notification.permission === 'granted' && localStorage.getItem('delfino-notif') === '1'; } catch (e) {}
+  const canNotify = 'Notification' in window && 'serviceWorker' in navigator;
+  if (canNotify) { $('notif').hidden = false; if (notifOn) { $('notif').textContent = 'Mitteilungen an'; $('notif').classList.add('on'); } }
+  $('notif').addEventListener('click', async () => {
+    if (!canNotify) return;
+    if (!standalone && isIos) { $('install').hidden = false; return; }   // iPhone: erst zum Home-Bildschirm hinzufuegen
+    try {
+      const r = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
+      notifOn = r === 'granted'; try { localStorage.setItem('delfino-notif', notifOn ? '1' : '0'); } catch (e) {}
+      $('notif').textContent = notifOn ? 'Mitteilungen an' : 'Mitteilungen nicht erlaubt'; $('notif').classList.toggle('on', notifOn);
+    } catch (e) { $('notif').textContent = 'Mitteilungen gehen hier nicht'; }
+  });
+  const showNote = (title, body, tag, delayMs) => navigator.serviceWorker.ready.then((reg) => {
+    const o = { body, tag, icon: 'icon.png' };
+    if (delayMs && 'showTrigger' in Notification.prototype && typeof TimestampTrigger !== 'undefined') o.showTrigger = new TimestampTrigger(Date.now() + delayMs);
+    else if (delayMs) return;
+    return reg.showNotification(title, o);
+  }).catch(() => {});
+  const needText = (c) => {
+    const nm = SHORT[c.species];
+    if (c.dead) return ['dead', nm + ' ist gestorben', 'Da riecht was komisch.'];
+    if (c.hunger < 25) return ['h', nm + ' hat Hunger', 'Schau mal nach ihm.'];
+    if (c.fun < 25) return ['f', nm + ' langweilt sich', 'Schau mal nach ihm.'];
+    if (c.energy < 25) return ['e', nm + ' ist müde', 'Schau mal nach ihm.'];
+    if (c.plastic >= 3) return ['p', c.species === 3 ? 'Bei ' + nm + ' sieht es wild aus' : 'Plastik bei ' + nm, 'Schau mal nach ihm.'];
+    return null;
+  };
+  let lastNeed = '';
+  const checkNotify = () => {   // laeuft die App noch (z. B. kurz im Hintergrund), kommt die Meldung sofort
+    if (!notifOn || !document.hidden) { const n0 = needText(S); lastNeed = n0 ? n0[0] : ''; return; }
+    const n = needText(S);
+    if (n && n[0] !== lastNeed) showNote(n[1], n[2], 'need-' + n[0]);
+    lastNeed = n ? n[0] : '';
+  };
+  const planNotes = () => {   // App zu: berechnen, wann ihm etwas fehlt (Tier schlaeft), und als Zeitplan-Mitteilung vormerken, falls das Geraet das kann
+    if (!notifOn || !('showTrigger' in Notification.prototype)) return;
+    const c = JSON.parse(JSON.stringify(S)), seen = {};
+    for (let i = 1; i <= 8640 && !c.dead; i++) {
+      c.now += 10; c.sleeping = true; step(c);
+      const n = needText(c); if (n && !seen[n[0]]) { seen[n[0]] = 1; showNote(n[1], n[2], 'plan-' + n[0], i * 10000); }
+    }
+    if (c.dead) { const n = needText(c); showNote(n[1], n[2], 'plan-dead', 8640 * 10000); }
+  };
+  const clearPlans = () => navigator.serviceWorker.ready.then((reg) => reg.getNotifications({ includeTriggered: true })).then((l) => l.forEach((n) => { if (n.tag && n.tag.startsWith('plan-')) n.close(); })).catch(() => {});
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { save(); planNotes(); } else clearPlans(); });
+
+  let last = performance.now(), acc = 0, lastSave = 0, lastTrawl = 0, lastNote = 0;
   function frame(t) {
     const dt = Math.min(0.25, (t - last) / 1000); last = t;
     acc += dt * SPEEDF[S.speed]; let n = 0; while (acc >= 1 && n < 5000) { step(S); S.now += 1; acc -= 1; n++; }
+    trawlTick(S, t);
+    if (S.ui === 0 && t - lastAct < 20000 && t - lastTrawl >= 1000) { lastTrawl = t; if (rnd(S) % 240 === 0) { trawlStart(S, t); if (S.trawl) lastAct = t; } }   // Trawling nur, wenn man gerade spielt
+    if (t - lastNote >= 5000) { lastNote = t; checkNotify(); }
     if (motionOn && t - shWin >= 1000) {
       if (shN && S.ui === 5 && shSum / shN > SOFT[S.sens || 2]) gBall(S, t);
       else if (shN && S.ui === 0 && S.sens > 0) { const avg = shSum / shN; if (avg > WILD[S.sens]) gShake(S, t, 2); else if (avg > SOFT[S.sens]) gShake(S, t, 1); }
