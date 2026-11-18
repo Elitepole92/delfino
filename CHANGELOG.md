@@ -10,6 +10,7 @@ Build-Nummer hoch; nur die vergleicht der Stick beim Update. „Build“ unten =
 alten Releases (v1 … v20).
 
 ## 3 – Spiel neu abgestimmt
+- **3.2.0** Beduerfnisse kommen spaeter (Hunger nach ca. 3,5 h), krank erst bei Unordnung oder Vernachlaessigung; Gesundheit sinkt dann umso schneller, je schlechter es dem Tier geht (alles leer: ca. 2 h)
 - **3.1.2** Versionsnummer im Menue unter dem Copyright und im Update-Hinweis der Handy-App
 - **3.1.1** Handy-App: eigene, verstaendliche Anleitung (nur App)
 - **3.1.0** Engelchen und „ist jetzt an einem besseren Ort“, Anleitung beim ersten Start und im Menue, gesunder Start (Build 20)

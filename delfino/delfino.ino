@@ -183,18 +183,23 @@ static void gStep() {   // genau 1 Spielsekunde
   if (S.dead) return;
   S.age += 1;
   bool night = isNight();
-  if (S.sleeping) { S.energy += 0.15f; S.hunger -= 0.005f; S.fun -= 0.003f; }
-  else { S.hunger -= 0.012f; S.fun -= 0.010f; S.energy -= night ? 0.015f : 0.006f; }   // nachts wird er schneller muede; haelt ueber Nacht durch
-  S.fun -= 0.003f * S.plastic;
-  if (S.sick) S.fun -= 0.005f;
+  if (S.sleeping) { S.energy += 0.15f; S.hunger -= 0.0025f; S.fun -= 0.0015f; }
+  else { S.hunger -= 0.005f; S.fun -= 0.0035f; S.energy -= night ? 0.008f : 0.003f; }   // Beduerfnisse kommen langsam (Hunger nach ca. 3,5 h)
+  S.fun -= 0.0015f * S.plastic;
+  if (S.sick) S.fun -= 0.003f;
   S.hunger = clamp100(S.hunger); S.fun = clamp100(S.fun); S.energy = clamp100(S.energy);
   if (S.sleeping && S.energy >= 100 && !night) S.sleeping = false;   // nachts bleibt er liegen
   if (!S.sleeping && night && S.energy < 40) S.sleeping = true;      // und schlaeft von selbst ein
-  if (rnd() < 10 && S.plastic < 5) { messSet(S.plastic, S.species == 3 ? MS_CABLE : ((S.age & 1) ? MS_CONF : MS_CABLE)); S.plastic++; }   // im Schnitt alle 17 Minuten ein Teil (Hamster: Kabelsalat, Konfetti gibt's nur nach der Party)
+  if (rnd() < 3 && S.plastic < 5) { messSet(S.plastic, S.species == 3 ? MS_CABLE : ((S.age & 1) ? MS_CONF : MS_CABLE)); S.plastic++; }   // im Schnitt knapp jede Stunde ein Teil (Hamster: Kabelsalat, Konfetti gibt's nur nach der Party)
   float low = fminf(S.hunger, fminf(S.fun, S.energy));
-  int risk = S.species == 3 ? 1 + (S.fun < 40 ? 6 : 0) + S.plastic : 1 + 2 * S.plastic + (low < 25 ? 4 : 0);   // pro 10000 und Sekunde; Hamster: Langeweile statt Krankheit
+  int risk = S.species == 3 ? (S.fun < 30 ? 4 : 0) + (S.plastic >= 3 ? S.plastic : 0) : (S.plastic >= 3 ? 2 * S.plastic : 0) + (low < 25 ? 4 : 0);   // pro 10000 und Sekunde; gut versorgt und sauber: wird nicht krank (Hamster: Langeweile)
   if (rnd() < risk && !S.sick) S.sick = true;
-  if (low < 10 || S.sick) S.health -= (low < 10 ? 0.0015f : 0) + (S.sick ? 0.001f : 0);
+  // Gesundheit: je schlechter es ihm geht, desto schneller geht sie runter (alles leer + krank: ca. 2 h)
+  float need = 0;
+  if (S.hunger < 25) need += (25 - S.hunger) / 25;
+  if (S.fun < 25) need += (25 - S.fun) / 25;
+  if (S.energy < 25) need += (25 - S.energy) / 25;
+  if (need > 0 || S.sick) S.health -= 0.004f * need + (S.sick ? 0.003f : 0);
   else S.health += 0.01f;
   S.health = clamp100(S.health);
   if (S.health <= 0) { S.dead = true; S.sleeping = false; }

@@ -102,7 +102,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 <p class="hint" id="hint">Tipp: In Safari über Teilen → „Zum Home-Bildschirm“ wird Delfino zur App.</p>
 <script>
 const FW_VERSION = 0;
-const FW_NAME = '3.1.2';
+const FW_NAME = '3.2.0';
 // ===== TAMA CORE (Logik + Zeichnen, 135x240 hochkant) – identisch mit dem Sketch =====
 const rgb = (r, g, b) => ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 const C = {
@@ -229,18 +229,22 @@ function step(S) {
   if (S.dead) return;
   S.age += 1;
   const night = isNight(S);
-  if (S.sleeping) { S.energy += 0.15; S.hunger -= 0.005; S.fun -= 0.003; }
-  else { S.hunger -= 0.012; S.fun -= 0.010; S.energy -= night ? 0.015 : 0.006; }
-  S.fun -= 0.003 * S.plastic;
-  if (S.sick) S.fun -= 0.005;
+  if (S.sleeping) { S.energy += 0.15; S.hunger -= 0.0025; S.fun -= 0.0015; }
+  else { S.hunger -= 0.005; S.fun -= 0.0035; S.energy -= night ? 0.008 : 0.003; }
+  S.fun -= 0.0015 * S.plastic;
+  if (S.sick) S.fun -= 0.003;
   S.hunger = clamp(S.hunger); S.fun = clamp(S.fun); S.energy = clamp(S.energy);
   if (S.sleeping && S.energy >= 100 && !night) S.sleeping = false;
   if (!S.sleeping && night && S.energy < 40) S.sleeping = true;
-  if (rnd(S) < 10 && S.plastic < 5) { messSet(S, S.plastic, S.species === 3 ? MS.CABLE : ((S.age & 1) ? MS.CONF : MS.CABLE)); S.plastic++; }
+  if (rnd(S) < 3 && S.plastic < 5) { messSet(S, S.plastic, S.species === 3 ? MS.CABLE : ((S.age & 1) ? MS.CONF : MS.CABLE)); S.plastic++; }
   const low = Math.min(S.hunger, S.fun, S.energy);
-  const risk = S.species === 3 ? 1 + (S.fun < 40 ? 6 : 0) + S.plastic : 1 + 2 * S.plastic + (low < 25 ? 4 : 0);
+  const risk = S.species === 3 ? (S.fun < 30 ? 4 : 0) + (S.plastic >= 3 ? S.plastic : 0) : (S.plastic >= 3 ? 2 * S.plastic : 0) + (low < 25 ? 4 : 0);
   if (rnd(S) < risk && !S.sick) S.sick = true;
-  if (low < 10 || S.sick) S.health -= (low < 10 ? 0.0015 : 0) + (S.sick ? 0.001 : 0);
+  let need = 0;
+  if (S.hunger < 25) need += (25 - S.hunger) / 25;
+  if (S.fun < 25) need += (25 - S.fun) / 25;
+  if (S.energy < 25) need += (25 - S.energy) / 25;
+  if (need > 0 || S.sick) S.health -= 0.004 * need + (S.sick ? 0.003 : 0);
   else S.health += 0.01;
   S.health = clamp(S.health);
   if (S.health <= 0) { S.dead = true; S.sleeping = false; }
