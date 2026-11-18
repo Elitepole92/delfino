@@ -315,7 +315,8 @@ function newGame(S, t, sp) {
   Object.assign(S, newEgg(S.seed ^ (t | 0)), keep, { species: sp });
   say(S, t, I.HEART); anim(S, t, A.NEW);
 }
-let SET_ROWS = [0, 1, 2, 3, 4, 5, 6, 7, 8];   // Eintraege im Einstellungsmenue (die Handy-Version laesst Akku, WLAN, Update weg)
+let SET_ROWS = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+let MANUAL_PHONE = false;   // Handy-App: Anleitung ohne Stick-Tasten und ohne Display aus   // Eintraege im Einstellungsmenue (die Handy-Version laesst Akku, WLAN, Update weg)
 const ANSWERS = [
   "Mach erst|mal Line|Check.",
   "Das regelt|der|Kompressor.",
@@ -954,7 +955,16 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   function drawManual(S, t) {
     R(0, 0, W, H, C.BGS);
     T('ANLEITUNG ' + (S.uiSel + 1) + '/3', 6, 5, 1, C.SEL); R(3, 16, 129, 1, C.DIM);
-    if (S.uiSel === 0) {
+    if (S.uiSel === 0 && MANUAL_PHONE) {
+      const kk = ['A', 'B', 'B'], a1 = ['Ausfuehren', 'Weiter', 'Lang halten:'], a2 = ['(grosse Taste)', '(kleine Taste)', 'oeffnet Menue'];
+      for (let i = 0; i < 3; i++) {
+        const y = 24 + i * 34;
+        R(4, y, 38, 18, C.SEL); T(kk[i], 4 + dv(38 - tw(kk[i], 2), 2), y + 2, 2, C.BG);
+        T(a1[i], 46, y + 1, 1, C.TXT); T(a2[i], 46, y + 10, 1, C.DIM);
+      }
+      T('B waehlt ein Symbol,', 6, 128, 1, C.TXT); T('A fuehrt es aus.', 6, 138, 1, C.TXT);
+      T('Waehle dein Tier und', 6, 160, 1, C.TXT); T('kuemmere dich gut', 6, 170, 1, C.TXT); T('darum. Viel Spass!', 6, 180, 1, C.TXT);
+    } else if (S.uiSel === 0) {
       const kk = ['A', 'B', 'B+', 'PWR'], a1 = ['Ausfuehren', 'Weiter', 'Lang halten:', 'Kurz druecken:'], a2 = ['(Taste vorne)', '(Taste Seite)', 'Menue', 'Display aus'];
       for (let i = 0; i < 4; i++) {
         const y = 24 + i * 34;
@@ -972,6 +982,9 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
         T(a1[i], 36, y + 4, 1, C.TXT); T(a2[i], 36, y + 14, 1, C.DIM);
       }
       T('Oben: Hunger, Spass,', 6, 178, 1, C.TXT); T('Energie, Gesundheit.', 6, 188, 1, C.TXT); T('Leere Balken = Hilfe!', 6, 198, 1, C.LOW);
+    } else if (MANUAL_PHONE) {
+      const ln = ['Schuetteln', 'Unter dem Spiel', 'einschalten, dann:', 'sanft = streicheln', 'wild = Schwindel', '', 'Trawling', 'Netz naht! Schnell', 'A tippen, dann weicht', 'das Tier aus.', '', 'App zu', 'Das Tier schlaeft,', 'bis du wiederkommst.'];
+      for (let i = 0; i < ln.length; i++) T(ln[i], 6, 26 + i * 13, 1, (i === 0 || i === 6 || i === 11) ? C.SEL : C.TXT);
     } else {
       const ln = ['Schuetteln', 'sanft = streicheln', 'wild = Schwindel', '', 'Trawling', 'Netz naht! Schnell', 'A tippen, dann weicht', 'das Tier aus.', '', 'Display aus', 'Das Tier schlaeft,', 'Zeit laeuft weiter.'];
       for (let i = 0; i < 12; i++) T(ln[i], 6, 26 + i * 13, 1, (i === 0 || i === 4 || i === 9) ? C.SEL : C.TXT);
@@ -1064,7 +1077,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
 }
 // ===== ENDE CORE =====
 
-SET_ROWS = [0, 1, 2, 3, 7, 8];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, Anleitung, zurueck
+SET_ROWS = [0, 1, 2, 3, 7, 8]; MANUAL_PHONE = true;   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, Anleitung, zurueck
 (function () {
   const cv = document.getElementById('lcd'), ctx = cv.getContext('2d'), SC = 4;
   ctx.setTransform(SC, 0, 0, SC, 0, 0); ctx.textBaseline = 'alphabetic'; ctx.imageSmoothingEnabled = false;
