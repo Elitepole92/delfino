@@ -92,6 +92,7 @@ struct Tama {
   uint8_t blog[24];             // Akku-Verlauf: stuendlich Prozent, 255 = unbekannt, ganz rechts das Neueste
   int slpFail, deepN;           // Leichtschlaf-Fehlversuche, Anzahl Tiefschlaf-Naechte
   int first;                    // 1 = Tierwahl ohne Zurueck (erster Start oder Tier gestorben)
+  int man;                      // Anleitung: 1 = nach der ersten Tierwahl zeigen, 2 = laeuft gerade (danach ins Spiel)
   int trawl, trawlTaps;         // Trawling: 0 aus, 1 Netz naht, 2 ausgewichen, 3 erwischt; Tipper
   int32_t trawlAt;
 };
@@ -99,7 +100,7 @@ static Tama S;
 static M5Canvas cv(&M5.Display);
 static Preferences prefs;
 // Pixel-Icons ('#' = Pixel)
-enum { I_FORK, I_PAD, I_MOON, I_SUN, I_ROD, I_KIT, I_HEART, I_BOLT, I_CLOCK, I_BALL, I_WIENER, I_COOKIE, I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_BACK, I_CHECK, I_CROSSX, I_CUP, I_CIG, I_BROOM, I_PARTY };
+enum { I_FORK, I_PAD, I_MOON, I_SUN, I_ROD, I_KIT, I_HEART, I_BOLT, I_CLOCK, I_BALL, I_WIENER, I_COOKIE, I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_BACK, I_CHECK, I_CROSSX, I_CUP, I_CIG, I_BROOM, I_PARTY, I_HELP };
 static const char* const IC_FORK[] = { "#.#.#...##.", "#.#.#..###.", "#.#.#..###.", "#####..###.", ".###...###.", "..#.....#..", "..#.....#..", "..#.....#..", "..#.....#..", nullptr };
 static const char* const IC_PAD[] = { "..########..", ".##########.", "###.####.###", "##...##.#.##", "###.####.###", "############", "####....####", ".##......##.", nullptr };
 static const char* const IC_MOON[] = { "....###.####", "..####....#.", ".####....#..", ".####...####", ".####.......", ".#####...##.", "..########..", "....####....", nullptr };
@@ -126,15 +127,16 @@ static const char* const IC_CUP[] = { "..#..#.....", ".#..#......", "..#..#.....
 static const char* const IC_CIG[] = { "........#.#.", ".........#..", "........#...", "############", "############", nullptr };
 static const char* const IC_BROOM[] = { "........##.", ".......##..", "......##...", ".....##....", "...####....", "..######...", ".#######...", "#.#.#.#....", "#.#.#......", nullptr };
 static const char* const IC_PARTY[] = { "...#...", ".#####.", "#..#...", "#..#...", ".#####.", "...#..#", "...#..#", ".#####.", "...#...", nullptr };   // Dollarzeichen
+static const char* const IC_HELP[] = { ".#####.", "#.....#", "......#", ".....#.", "...##..", "...#...", ".......", "...#...", nullptr };
 static const char* const* const ICONS[] = { IC_FORK, IC_PAD, IC_MOON, IC_SUN, IC_ROD, IC_KIT, IC_HEART, IC_BOLT, IC_CLOCK, IC_BALL, IC_WIENER, IC_COOKIE,
-  IC_NEWG, IC_FAST, IC_SPK, IC_WAVE, IC_BATT, IC_WIFI, IC_DL, IC_BACK, IC_CHECK, IC_CROSSX, IC_CUP, IC_CIG, IC_BROOM, IC_PARTY };
+  IC_NEWG, IC_FAST, IC_SPK, IC_WAVE, IC_BATT, IC_WIFI, IC_DL, IC_BACK, IC_CHECK, IC_CROSSX, IC_CUP, IC_CIG, IC_BROOM, IC_PARTY, IC_HELP };
 static int icW(int id) { return (int)strlen(ICONS[id][0]); }
 static int icH(int id) { int n = 0; while (ICONS[id][n]) n++; return n; }
 
 static const char* const NAMES[4] = { "Delfino", "Orki", "Schildi", "Medien Hamster" };
 
 static void newEgg(uint32_t seed) {
-  S.hunger = 80; S.fun = 80; S.energy = 80; S.health = 100; S.age = 0; S.seed = seed ? seed : 12345;
+  S.hunger = 90; S.fun = 90; S.energy = 90; S.health = 100; S.age = 0; S.seed = seed ? seed : 12345;
   S.sleeping = false; S.dead = false; S.sick = false; S.plastic = 0; S.menu = 0; S.msgIcon = -1; S.msgNo = false; S.msgUntil = 0;
   S.anim = 0; S.animArg = 0; S.animStart = 0;
   S.now = 0; S.coolUntil = 0; S.snd = 0; S.sndStart = 0;
@@ -142,7 +144,7 @@ static void newEgg(uint32_t seed) {
   S.ui = 0; S.uiSel = 0; S.req = 0; S.batt = -1; S.chg = false; S.wifiOk = false; S.netState = 0; S.netPct = 0; S.netErr = 0;
   S.ballAns = -1; S.ballAt = 0; S.ballUsed = 0; S.messT = 0;
   memset(S.blog, 255, sizeof(S.blog)); S.slpFail = 0; S.deepN = 0;
-  S.first = 0; S.trawl = 0; S.trawlTaps = 0; S.trawlAt = 0;
+  S.first = 0; S.man = 0; S.trawl = 0; S.trawlTaps = 0; S.trawlAt = 0;
 }
 static float clamp100(float v) { return v < 0 ? 0 : (v > 100 ? 100 : v); }
 enum { MS_CABLE, MS_CUP, MS_CONF };   // Unordnung beim Medien Hamster
@@ -304,10 +306,11 @@ static void gBall(int32_t t) {   // schuetteln oder A: neue Antwort
   S.ballAns = a; S.ballAt = t; sfx(t, A_DIZZY);
 }
 // ---- Tasten ----
-static const int SET_N = 8;   // Einstellungen: Neues Spiel, Tempo, Lautstaerke, Sensoren, Akku, WLAN, Update, Zurueck (+ versteckt: Orakel)
+static const int SET_N = 9;   // Einstellungen: Neues Spiel, Tempo, Lautstaerke, Sensoren, Akku, WLAN, Update, Zurueck (+ versteckt: Orakel)
+static void closeManual() { if (S.man == 2) { S.ui = 0; S.man = 0; } else { S.ui = 1; S.uiSel = 7; } }   // nach der ersten Tierwahl ins Spiel, sonst zurueck ins Menue
 static void pressLong() {     // Taste B lang: Einstellungen auf/zu
   if (S.ui == 0 && S.trawl) return;
-  if (S.ui == 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui == 5) S.ui = 0; else S.ui = 1;   // aus Akku-Seite (6) zurueck in die Einstellungen
+  if (S.ui == 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui == 5) S.ui = 0; else if (S.ui == 7) closeManual(); else S.ui = 1;   // aus Akku-Seite (6) zurueck in die Einstellungen
 }
 static void pressNext() {
   if (S.ui == 0 && S.trawl) return;
@@ -315,6 +318,7 @@ static void pressNext() {
   else if (S.ui == 5) { S.ui = 1; S.uiSel = SET_N; }
   else if (S.ui == 2) S.uiSel = (S.uiSel + 1) % (S.first ? 4 : 5);
   else if (S.ui == 6) S.uiSel = (S.uiSel + 1) % 2;
+  else if (S.ui == 7) S.uiSel = (S.uiSel + 1) % 3;
   else if (S.ui == 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
 static void pressOk(int32_t t) {
@@ -327,12 +331,14 @@ static void pressOk(int32_t t) {
     else if (S.uiSel == 4) { S.ui = 6; S.uiSel = 1; }   // Akku-Seite, Auswahl steht auf Zurueck
     else if (S.uiSel == 5) { S.ui = 3; S.req = 1; S.netState = 0; }
     else if (S.uiSel == 6) { S.ui = 4; S.req = 2; S.netState = 1; S.netPct = 0; S.netErr = 0; }
-    else if (S.uiSel == 7) S.ui = 0;
+    else if (S.uiSel == 7) { S.ui = 7; S.uiSel = 0; S.man = 0; }   // Anleitung
+    else if (S.uiSel == 8) S.ui = 0;
     else if (S.uiSel == SET_N) { S.ui = 5; S.ballAns = -1; }
     return;
   }
-  if (S.ui == 2) { if (S.uiSel == 4) { S.ui = 1; S.uiSel = 0; } else { newGame(t, S.uiSel); S.ui = 0; } return; }
+  if (S.ui == 2) { if (S.uiSel == 4) { S.ui = 1; S.uiSel = 0; } else { int man = S.man; newGame(t, S.uiSel); if (man) { S.ui = 7; S.uiSel = 0; S.man = 2; } else S.ui = 0; } return; }
   if (S.ui == 5) { gBall(t); return; }
+  if (S.ui == 7) { if (S.uiSel < 2) S.uiSel++; else closeManual(); return; }
   if (S.ui == 6) { if (S.uiSel == 0) S.req = 3; else { S.ui = 1; S.uiSel = 4; } return; }   // Aus / Zurueck
   if (S.ui >= 3) { S.ui = 1; return; }
   if (S.dead) { S.ui = 2; S.uiSel = S.species; S.first = 1; return; }   // Neues Spiel: zur Tierauswahl
@@ -776,6 +782,14 @@ static void drawTrawl(int32_t t, int tap) {   // Schleppnetz kommt von rechts; o
     for (int i = 0; i < TRAWL_NEED; i++) R(4 + i * 13, 38, 11, 5, i < tap ? C_OK : C_PANEL);
   }
 }
+static void drawAngel(int cx, int y, int32_t t) {   // Engelchen schwebt hinter dem toten Tier
+  y += ((t / 400) % 2) * 2; int f = ((t / 300) % 2) * 2;
+  R(cx - 30, y + 6 - f, 22, 5, C_WHITE); R(cx - 26, y + 11 - f, 18, 5, C_REFL); R(cx - 22, y + 16 - f, 14, 4, C_WHITE);   // Fluegel links
+  R(cx + 8, y + 6 - f, 22, 5, C_WHITE); R(cx + 8, y + 11 - f, 18, 5, C_REFL); R(cx + 8, y + 16 - f, 14, 4, C_WHITE);      // Fluegel rechts
+  R(cx - 8, y + 16, 16, 18, C_WHITE); R(cx - 11, y + 30, 22, 4, C_WHITE); R(cx - 3, y + 18, 6, 14, C_REFL);               // Gewand
+  R(cx - 6, y + 4, 12, 12, C_SKINF); R(cx - 4, y + 8, 2, 2, C_EYE); R(cx + 2, y + 8, 2, 2, C_EYE); R(cx - 2, y + 12, 4, 1, C_LIPS);   // Kopf
+  R(cx - 8, y - 4, 16, 2, C_GOLD); R(cx - 10, y - 2, 2, 3, C_GOLD); R(cx + 8, y - 2, 2, 3, C_GOLD); R(cx - 8, y, 16, 2, C_GOLD);   // Heiligenschein
+}
 static void drawGame(int32_t t) {
   int mo = mood();
   bool ham = S.species == 3;   // Medien Hamster: Messestand statt Wasser
@@ -821,6 +835,7 @@ static void drawGame(int32_t t) {
   bool sk = (S.sick || pend) && !S.dead;
   if (party) { partyLights(ap); partyPole(cx); }
   if (ham && S.dead) R(cx - 52, cy + 36, 104, 3, C_DESKD);   // Schatten unter dem toten Hamster
+  if (S.dead) drawAngel(DCX, ham ? 44 : 52, t);
   gParty = party; gHip = party ? ((ap / 150) % 2) * 3 : 0;
   drawPet(S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
   gParty = false; gHip = 0;
@@ -884,11 +899,12 @@ static void drawGame(int32_t t) {
       iconK(I_CLOCK, ax, AGEY + 3, 3, 2, C_DIM); T(buf, ax + cw + 3, AGEY, 2, C_DIM);
     }
   }
-  if (S.dead) {   // gestorben: Vorwurf und Neustart
+  if (S.dead) {   // gestorben: Panel deckt alles dahinter ab, dann Text und Neustart
+    R(0, 158, W, 82, C_BGS);
     const char* nm = NAMES[S.species]; int s2 = tw(nm, 2) <= 125 ? 2 : 1;
-    T("Du hast", (W - tw("Du hast", 1)) / 2, 164, 1, C_TXT);
-    T(nm, (W - tw(nm, s2)) / 2, s2 == 2 ? 175 : 179, s2, C_SEL);
-    T("im Stich gelassen", (W - tw("im Stich gelassen", 1)) / 2, 195, 1, C_TXT);
+    T(nm, (W - tw(nm, s2)) / 2, s2 == 2 ? 164 : 168, s2, C_SEL);
+    T("ist jetzt an einem", (W - tw("ist jetzt an einem", 1)) / 2, 184, 1, C_TXT);
+    T("besseren Ort", (W - tw("besseren Ort", 1)) / 2, 194, 1, C_TXT);
     R(3, 210, 129, 24, C_SEL); T("Neues Spiel", (W - tw("Neues Spiel", 1)) / 2, 218, 1, C_BG);
   } else drawMenu(an, sk);
 }
@@ -902,12 +918,12 @@ static void backRow(int y, bool sel, int h = 26) {
 }
 static void drawSettings(int32_t t) {
   R(0, 0, W, H, C_BGS);
-  const int ids[8] = { I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_BACK };
+  const int ids[9] = { I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_HELP, I_BACK };
   for (int r = 0; r < SET_N; r++) {
-    int y = 4 + r * 27; bool sel = S.uiSel == r;
+    int y = 4 + r * 25; bool sel = S.uiSel == r;
     uint16_t fg = sel ? C_BG : C_TXT;
-    if (r == 7) { backRow(y, sel, 24); continue; }
-    R(3, y, 129, 24, sel ? C_SEL : C_PANEL);
+    if (r == 8) { backRow(y, sel, 23); continue; }
+    R(3, y, 129, 23, sel ? C_SEL : C_PANEL);
     if (r == 0) T("Neu", 8, y + 5, 2, fg);   // neues Spiel
     else iconK(ids[r], 8 + (20 - kW(ids[r], 3, 2)) / 2, y + (24 - kH(ids[r], 3, 2)) / 2, 3, 2, fg);
     if (r == 0) { if (S.species == 3) { gkn = 1; gkd = 6; drawPet(3, 104, y + 17, M_HAPPY, false, false, t, A_NONE, 0, false); } else { gkn = 1; gkd = 4; drawPet(S.species, 104, y + 14, M_HAPPY, false, false, t, A_NONE, 0, false); } }
@@ -922,7 +938,7 @@ static void drawSettings(int32_t t) {
     else if (r == 6) { char b[12]; snprintf(b, sizeof(b), "v%d", FW_VERSION); T(b, 128 - tw(b, 2), y + 4, 2, fg); }
   }
   const char* cr = "(c) 2026 Daniel Lassak";
-  T(cr, (W - tw(cr, 1)) / 2 + 1, 228, 1, S.uiSel == SET_N ? C_SEL : C_DIM);   // leuchtet, wenn der versteckte Platz gewaehlt ist
+  T(cr, (W - tw(cr, 1)) / 2 + 1, 230, 1, S.uiSel == SET_N ? C_SEL : C_DIM);   // leuchtet, wenn der versteckte Platz gewaehlt ist
 }
 static void drawAkku(int32_t t) {   // Akku-Seite: Prozent, Verlauf der letzten 24 Stunden, Schlaf-Zaehler, Aus
   (void)t;
@@ -945,6 +961,39 @@ static void drawAkku(int32_t t) {   // Akku-Seite: Prozent, Verlauf der letzten 
   R(3, 162, 129, 24, S.uiSel == 0 ? C_SEL : C_PANEL);
   T("Aus", INFX - tw("Aus", 2) / 2, 167, 2, S.uiSel == 0 ? C_BG : C_TXT);
   backRow(192, S.uiSel == 1, 24);
+}
+static void drawManual(int32_t t) {   // Kurzanleitung, drei Seiten (der Hamster kommt hier nicht vor)
+  (void)t;
+  R(0, 0, W, H, C_BGS);
+  char b[24]; snprintf(b, sizeof(b), "ANLEITUNG %d/3", S.uiSel + 1);
+  T(b, 6, 5, 1, C_SEL); R(3, 16, 129, 1, C_DIM);
+  if (S.uiSel == 0) {
+    const char* kk[4] = { "A", "B", "B+", "PWR" };
+    const char* a1[4] = { "Ausfuehren", "Weiter", "Lang halten:", "Kurz druecken:" };
+    const char* a2[4] = { "(Taste vorne)", "(Taste Seite)", "Menue", "Display aus" };
+    for (int i = 0; i < 4; i++) {
+      int y = 24 + i * 34;
+      R(4, y, 38, 18, C_SEL); T(kk[i], 4 + (38 - tw(kk[i], 2)) / 2, y + 2, 2, C_BG);
+      T(a1[i], 46, y + 1, 1, C_TXT); T(a2[i], 46, y + 10, 1, C_DIM);
+    }
+    T("Waehle dein Tier und", 6, 168, 1, C_TXT); T("kuemmere dich gut", 6, 178, 1, C_TXT); T("darum. Viel Spass!", 6, 188, 1, C_TXT);
+  } else if (S.uiSel == 1) {
+    const int ids[5] = { I_FORK, I_PAD, I_MOON, I_ROD, I_KIT };
+    const uint16_t cols[5] = { C_FOOD, C_PLAY, C_SEL, C_OK, C_CHEEK };
+    const char* a1[5] = { "Futter geben", "Spielen", "Schlafen legen", "Plastik angeln", "Medizin, wenn" };
+    const char* a2[5] = { "gegen Hunger", "macht Spass", "nochmal = wecken", "Wasser sauber", "er krank ist" };
+    for (int i = 0; i < 5; i++) {
+      int y = 22 + i * 30;
+      R(3, y, 129, 26, C_PANEL);
+      iconK(ids[i], 8 + (20 - kW(ids[i], 3, 2)) / 2, y + (26 - kH(ids[i], 3, 2)) / 2, 3, 2, cols[i]);
+      T(a1[i], 36, y + 4, 1, C_TXT); T(a2[i], 36, y + 14, 1, C_DIM);
+    }
+    T("Oben: Hunger, Spass,", 6, 178, 1, C_TXT); T("Energie, Gesundheit.", 6, 188, 1, C_TXT); T("Leere Balken = Hilfe!", 6, 198, 1, C_LOW);
+  } else {
+    const char* ln[12] = { "Schuetteln", "sanft = streicheln", "wild = Schwindel", "", "Trawling", "Netz naht! Schnell", "A tippen, dann weicht", "das Tier aus.", "", "Display aus", "Das Tier schlaeft,", "Zeit laeuft weiter." };
+    for (int i = 0; i < 12; i++) T(ln[i], 6, 26 + i * 13, 1, (i == 0 || i == 4 || i == 9) ? C_SEL : C_TXT);
+  }
+  T(S.uiSel == 2 ? "A: Los geht's!" : "A weiter  B lang: zu", 6, 226, 1, C_DIM);
 }
 static void drawPicker(int32_t t) {   // Tier fuer das neue Spiel waehlen
   R(0, 0, W, H, C_BGS);
@@ -1031,6 +1080,7 @@ static void drawScene(int32_t t) {
   else if (S.ui == 4) drawUpdate(t);
   else if (S.ui == 5) drawBall(t);
   else if (S.ui == 6) drawAkku(t);
+  else if (S.ui == 7) drawManual(t);
   else drawGame(t);
 }
 
@@ -1207,7 +1257,7 @@ void setup() {
   M5.Display.setRotation(DREHUNG);
   cv.setColorDepth(16);
   cv.createSprite(W, H);
-  if (!loadState()) { newEgg(esp_random()); S.ui = 2; S.first = 1; }   // erster Start: erst ein Tier waehlen
+  if (!loadState()) { newEgg(esp_random()); S.ui = 2; S.first = 1; S.man = 1; }   // erster Start: erst ein Tier waehlen
   // Uhrzeit: kommt beim Kompilieren mit. Mit eingebauter Uhr laeuft sie auch weiter, wenn er aus ist.
   uint32_t bt = buildTime();
   bool hasRtc = M5.Rtc.isEnabled();

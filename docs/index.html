@@ -155,7 +155,7 @@ const C = {
   EMBER: rgb(0xff, 0x6a, 0x2a), CASH: rgb(0x5a, 0xb8, 0x5a), CASHL: rgb(0xa8, 0xe0, 0x9a), NET: rgb(0xc4, 0xa8, 0x6a), NETD: rgb(0x6e, 0x58, 0x34)
 };
 const I = { FORK: 0, PAD: 1, MOON: 2, SUN: 3, ROD: 4, KIT: 5, HEART: 6, BOLT: 7, CLOCK: 8, BALL: 9, WIENER: 10, COOKIE: 11,
-  NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21, CUP: 22, CIG: 23, BROOM: 24, PARTY: 25 };
+  NEWG: 12, FAST: 13, SPK: 14, WAVE: 15, BATT: 16, WIFI: 17, DL: 18, BACK: 19, CHECK: 20, CROSSX: 21, CUP: 22, CIG: 23, BROOM: 24, PARTY: 25, HELP: 26 };
 const ICONS = [
   ['#.#.#...##.', '#.#.#..###.', '#.#.#..###.', '#####..###.', '.###...###.', '..#.....#..', '..#.....#..', '..#.....#..', '..#.....#..'],
   ['..########..', '.##########.', '###.####.###', '##...##.#.##', '###.####.###', '############', '####....####', '.##......##.'],
@@ -182,16 +182,17 @@ const ICONS = [
   ['..#..#.....', '.#..#......', '..#..#.....', '########...', '#########..', '########.#.', '#########..', '.######....', '..####.....'],
   ['........#.#.', '.........#..', '........#...', '############', '############'],
   ['........##.', '.......##..', '......##...', '.....##....', '...####....', '..######...', '.#######...', '#.#.#.#....', '#.#.#......'],
-  ['...#...', '.#####.', '#..#...', '#..#...', '.#####.', '...#..#', '...#..#', '.#####.', '...#...']
+  ['...#...', '.#####.', '#..#...', '#..#...', '.#####.', '...#..#', '...#..#', '.#####.', '...#...'],
+  ['.#####.', '#.....#', '......#', '.....#.', '...##..', '...#...', '.......', '...#...']
 ];
 const icW = (id) => ICONS[id][0].length, icH = (id) => ICONS[id].length;
 const NAMES = ['Delfino', 'Orki', 'Schildi', 'Medien Hamster'];
 
 function newEgg(seed) {
-  return { hunger: 80, fun: 80, energy: 80, health: 100, age: 0, seed: (seed >>> 0) || 12345,
+  return { hunger: 90, fun: 90, energy: 90, health: 100, age: 0, seed: (seed >>> 0) || 12345,
     sleeping: false, dead: false, sick: false, plastic: 0, menu: 0, msgIcon: -1, msgNo: false, msgUntil: 0, anim: 0, animArg: 0, animStart: 0,
     now: 0, coolUntil: 0, snd: 0, sndStart: 0, species: 0, speed: 0, vol: 2, sens: 2,
-    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0, ballUsed: 0, messT: 0, blog: new Array(24).fill(255), slpFail: 0, deepN: 0, first: 0, trawl: 0, trawlTaps: 0, trawlAt: 0 };
+    ui: 0, uiSel: 0, req: 0, batt: -1, chg: false, wifiOk: false, netState: 0, netPct: 0, netErr: 0, ballAns: -1, ballAt: 0, ballUsed: 0, messT: 0, blog: new Array(24).fill(255), slpFail: 0, deepN: 0, first: 0, man: 0, trawl: 0, trawlTaps: 0, trawlAt: 0 };
 }
 const clamp = (v) => (v < 0 ? 0 : v > 100 ? 100 : v);
 const MS = { CABLE: 0, CUP: 1, CONF: 2 };
@@ -314,7 +315,7 @@ function newGame(S, t, sp) {
   Object.assign(S, newEgg(S.seed ^ (t | 0)), keep, { species: sp });
   say(S, t, I.HEART); anim(S, t, A.NEW);
 }
-let SET_ROWS = [0, 1, 2, 3, 4, 5, 6, 7];   // Eintraege im Einstellungsmenue (die Handy-Version laesst Akku, WLAN, Update weg)
+let SET_ROWS = [0, 1, 2, 3, 4, 5, 6, 7, 8];   // Eintraege im Einstellungsmenue (die Handy-Version laesst Akku, WLAN, Update weg)
 const ANSWERS = [
   "Mach erst|mal Line|Check.",
   "Das regelt|der|Kompressor.",
@@ -348,13 +349,15 @@ function gBall(S, t) {
   S.ballUsed |= 1 << a;
   S.ballAns = a; S.ballAt = t; sfx(S, t, A.DIZZY);
 }
-function pressLong(S) { if (S.ui === 0 && S.trawl) return; if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui === 5) S.ui = 0; else S.ui = 1; }
+function closeManual(S) { if (S.man === 2) { S.ui = 0; S.man = 0; } else { S.ui = 1; S.uiSel = SET_ROWS.indexOf(7); } }
+function pressLong(S) { if (S.ui === 0 && S.trawl) return; if (S.ui === 0) { S.ui = 1; S.uiSel = 0; } else if (S.ui <= 2 || S.ui === 5) S.ui = 0; else if (S.ui === 7) closeManual(S); else S.ui = 1; }
 function pressNext(S) {
   if (S.ui === 0 && S.trawl) return;
   if (S.ui === 1) S.uiSel = (S.uiSel + 1) % (SET_ROWS.length + 1);
   else if (S.ui === 5) { S.ui = 1; S.uiSel = SET_ROWS.length; }
   else if (S.ui === 2) S.uiSel = (S.uiSel + 1) % (S.first ? 4 : 5);
   else if (S.ui === 6) S.uiSel = (S.uiSel + 1) % 2;
+  else if (S.ui === 7) S.uiSel = (S.uiSel + 1) % 3;
   else if (S.ui === 0 && !S.dead) S.menu = (S.menu + 1) % 5;
 }
 function pressOk(S, t) {
@@ -368,12 +371,14 @@ function pressOk(S, t) {
     else if (it === 4) { S.ui = 6; S.uiSel = 1; }
     else if (it === 5) { S.ui = 3; S.req = 1; S.netState = 0; }
     else if (it === 6) { S.ui = 4; S.req = 2; S.netState = 1; S.netPct = 0; S.netErr = 0; }
-    else if (it === 7) S.ui = 0;
+    else if (it === 7) { S.ui = 7; S.uiSel = 0; S.man = 0; }
+    else if (it === 8) S.ui = 0;
     else if (S.uiSel === SET_ROWS.length) { S.ui = 5; S.ballAns = -1; }
     return;
   }
-  if (S.ui === 2) { if (S.uiSel === 4) { S.ui = 1; S.uiSel = 0; } else { newGame(S, t, S.uiSel); S.ui = 0; } return; }
+  if (S.ui === 2) { if (S.uiSel === 4) { S.ui = 1; S.uiSel = 0; } else { const man = S.man; newGame(S, t, S.uiSel); if (man) { S.ui = 7; S.uiSel = 0; S.man = 2; } else S.ui = 0; } return; }
   if (S.ui === 5) { gBall(S, t); return; }
+  if (S.ui === 7) { if (S.uiSel < 2) S.uiSel++; else closeManual(S); return; }
   if (S.ui === 6) { if (S.uiSel === 0) S.req = 3; else { S.ui = 1; S.uiSel = 4; } return; }
   if (S.ui >= 3) { S.ui = 1; return; }
   if (S.dead) { S.ui = 2; S.uiSel = S.species; S.first = 1; return; }
@@ -785,6 +790,14 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       for (let i = 0; i < TRAWL_NEED; i++) R(4 + i * 13, 38, 11, 5, i < tap ? C.OK : C.PANEL);
     }
   }
+  function drawAngel(cx, y, t) {
+    y += (dv(t, 400) % 2) * 2; const f = (dv(t, 300) % 2) * 2;
+    R(cx - 30, y + 6 - f, 22, 5, C.WHITE); R(cx - 26, y + 11 - f, 18, 5, C.REFL); R(cx - 22, y + 16 - f, 14, 4, C.WHITE);
+    R(cx + 8, y + 6 - f, 22, 5, C.WHITE); R(cx + 8, y + 11 - f, 18, 5, C.REFL); R(cx + 8, y + 16 - f, 14, 4, C.WHITE);
+    R(cx - 8, y + 16, 16, 18, C.WHITE); R(cx - 11, y + 30, 22, 4, C.WHITE); R(cx - 3, y + 18, 6, 14, C.REFL);
+    R(cx - 6, y + 4, 12, 12, C.SKINF); R(cx - 4, y + 8, 2, 2, C.EYE); R(cx + 2, y + 8, 2, 2, C.EYE); R(cx - 2, y + 12, 4, 1, C.LIPS);
+    R(cx - 8, y - 4, 16, 2, C.GOLD); R(cx - 10, y - 2, 2, 3, C.GOLD); R(cx + 8, y - 2, 2, 3, C.GOLD); R(cx - 8, y, 16, 2, C.GOLD);
+  }
   function drawGame(S, t) {
     let mo = mood(S);
     const ham = S.species === 3;
@@ -829,6 +842,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     const sk = (S.sick || pend) && !S.dead;
     if (party) { partyLights(ap); partyPole(cx); }
     if (ham && S.dead) R(cx - 52, cy + 36, 104, 3, C.DESKD);
+    if (S.dead) drawAngel(DCX, ham ? 44 : 52, t);
     gParty = party; gHip = party ? (dv(ap, 150) % 2) * 3 : 0;
     drawPet(S, S.species, cx, cy, mo, sk, S.dead, t, an, ap, true);
     gParty = false; gHip = 0;
@@ -887,10 +901,11 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       else { const cw = kW(I.CLOCK, 3, 2), ax = CORNX - tw(buf, 2) - cw - 2; iconK(I.CLOCK, ax, AGEY + 3, 3, 2, C.DIM); T(buf, ax + cw + 3, AGEY, 2, C.DIM); }
     }
     if (S.dead) {
+      R(0, 158, W, 82, C.BGS);
       const nm = NAMES[S.species], s2 = tw(nm, 2) <= 125 ? 2 : 1;
-      T('Du hast', dv(W - tw('Du hast', 1), 2), 164, 1, C.TXT);
-      T(nm, dv(W - tw(nm, s2), 2), s2 === 2 ? 175 : 179, s2, C.SEL);
-      T('im Stich gelassen', dv(W - tw('im Stich gelassen', 1), 2), 195, 1, C.TXT);
+      T(nm, dv(W - tw(nm, s2), 2), s2 === 2 ? 164 : 168, s2, C.SEL);
+      T('ist jetzt an einem', dv(W - tw('ist jetzt an einem', 1), 2), 184, 1, C.TXT);
+      T('besseren Ort', dv(W - tw('besseren Ort', 1), 2), 194, 1, C.TXT);
       R(3, 210, 129, 24, C.SEL); T('Neues Spiel', dv(W - tw('Neues Spiel', 1), 2), 218, 1, C.BG);
     } else drawMenu(S, an, sk);
   }
@@ -898,11 +913,11 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
   const backRow = (y, sel, h = 26) => { R(3, y, 129, h, sel ? C.SEL : C.PANEL); iconK(I.BACK, INFX - dv(kW(I.BACK, 3, 2), 2), y + dv(h - kH(I.BACK, 3, 2), 2), 3, 2, sel ? C.BG : C.TXT); };
   function drawSettings(S, t) {
     R(0, 0, W, H, C.BGS);
-    const ids = [I.NEWG, I.FAST, I.SPK, I.WAVE, I.BATT, I.WIFI, I.DL, I.BACK];
+    const ids = [I.NEWG, I.FAST, I.SPK, I.WAVE, I.BATT, I.WIFI, I.DL, I.HELP, I.BACK];
     for (let row = 0; row < SET_ROWS.length; row++) {
-      const r = SET_ROWS[row], y = 4 + row * 27, sel = S.uiSel === row, fg = sel ? C.BG : C.TXT;
-      if (r === 7) { backRow(y, sel, 24); continue; }
-      R(3, y, 129, 24, sel ? C.SEL : C.PANEL);
+      const r = SET_ROWS[row], y = 4 + row * 25, sel = S.uiSel === row, fg = sel ? C.BG : C.TXT;
+      if (r === 8) { backRow(y, sel, 23); continue; }
+      R(3, y, 129, 23, sel ? C.SEL : C.PANEL);
       if (r === 0) T('Neu', 8, y + 5, 2, fg);
       else iconK(ids[r], 8 + dv(20 - kW(ids[r], 3, 2), 2), y + dv(24 - kH(ids[r], 3, 2), 2), 3, 2, fg);
       if (r === 0) { if (S.species === 3) { gkn = 1; gkd = 6; drawPet(S, 3, 104, y + 17, M.HAPPY, false, false, t, A.NONE, 0, false); } else { gkn = 1; gkd = 4; drawPet(S, S.species, 104, y + 14, M.HAPPY, false, false, t, A.NONE, 0, false); } }
@@ -916,7 +931,7 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
       else if (r === 6) { const b = 'v' + FW_VERSION; T(b, 128 - tw(b, 2), y + 4, 2, fg); }
     }
     const cr = '(c) 2026 Daniel Lassak';
-    T(cr, dv(W - tw(cr, 1), 2) + 1, 228, 1, S.uiSel === SET_ROWS.length ? C.SEL : C.DIM);
+    T(cr, dv(W - tw(cr, 1), 2) + 1, 230, 1, S.uiSel === SET_ROWS.length ? C.SEL : C.DIM);
   }
   function drawAkku(S, t) {
     R(0, 0, W, H, C.BGS);
@@ -935,6 +950,33 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     R(3, 162, 129, 24, S.uiSel === 0 ? C.SEL : C.PANEL);
     T('Aus', INFX - dv(tw('Aus', 2), 2), 167, 2, S.uiSel === 0 ? C.BG : C.TXT);
     backRow(192, S.uiSel === 1, 24);
+  }
+  function drawManual(S, t) {
+    R(0, 0, W, H, C.BGS);
+    T('ANLEITUNG ' + (S.uiSel + 1) + '/3', 6, 5, 1, C.SEL); R(3, 16, 129, 1, C.DIM);
+    if (S.uiSel === 0) {
+      const kk = ['A', 'B', 'B+', 'PWR'], a1 = ['Ausfuehren', 'Weiter', 'Lang halten:', 'Kurz druecken:'], a2 = ['(Taste vorne)', '(Taste Seite)', 'Menue', 'Display aus'];
+      for (let i = 0; i < 4; i++) {
+        const y = 24 + i * 34;
+        R(4, y, 38, 18, C.SEL); T(kk[i], 4 + dv(38 - tw(kk[i], 2), 2), y + 2, 2, C.BG);
+        T(a1[i], 46, y + 1, 1, C.TXT); T(a2[i], 46, y + 10, 1, C.DIM);
+      }
+      T('Waehle dein Tier und', 6, 168, 1, C.TXT); T('kuemmere dich gut', 6, 178, 1, C.TXT); T('darum. Viel Spass!', 6, 188, 1, C.TXT);
+    } else if (S.uiSel === 1) {
+      const ids = [I.FORK, I.PAD, I.MOON, I.ROD, I.KIT], cols = [C.FOOD, C.PLAY, C.SEL, C.OK, C.CHEEK];
+      const a1 = ['Futter geben', 'Spielen', 'Schlafen legen', 'Plastik angeln', 'Medizin, wenn'], a2 = ['gegen Hunger', 'macht Spass', 'nochmal = wecken', 'Wasser sauber', 'er krank ist'];
+      for (let i = 0; i < 5; i++) {
+        const y = 22 + i * 30;
+        R(3, y, 129, 26, C.PANEL);
+        iconK(ids[i], 8 + dv(20 - kW(ids[i], 3, 2), 2), y + dv(26 - kH(ids[i], 3, 2), 2), 3, 2, cols[i]);
+        T(a1[i], 36, y + 4, 1, C.TXT); T(a2[i], 36, y + 14, 1, C.DIM);
+      }
+      T('Oben: Hunger, Spass,', 6, 178, 1, C.TXT); T('Energie, Gesundheit.', 6, 188, 1, C.TXT); T('Leere Balken = Hilfe!', 6, 198, 1, C.LOW);
+    } else {
+      const ln = ['Schuetteln', 'sanft = streicheln', 'wild = Schwindel', '', 'Trawling', 'Netz naht! Schnell', 'A tippen, dann weicht', 'das Tier aus.', '', 'Display aus', 'Das Tier schlaeft,', 'Zeit laeuft weiter.'];
+      for (let i = 0; i < 12; i++) T(ln[i], 6, 26 + i * 13, 1, (i === 0 || i === 4 || i === 9) ? C.SEL : C.TXT);
+    }
+    T(S.uiSel === 2 ? "A: Los geht's!" : 'A weiter  B lang: zu', 6, 226, 1, C.DIM);
   }
   function drawPicker(S, t) {
     R(0, 0, W, H, C.BGS);
@@ -1016,12 +1058,13 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     else if (S.ui === 4) drawUpdate(S, t);
     else if (S.ui === 5) drawBall(S, t);
     else if (S.ui === 6) drawAkku(S, t);
+    else if (S.ui === 7) drawManual(S, t);
     else drawGame(S, t);
   };
 }
 // ===== ENDE CORE =====
 
-SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, zurueck
+SET_ROWS = [0, 1, 2, 3, 7, 8];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, Anleitung, zurueck
 (function () {
   const cv = document.getElementById('lcd'), ctx = cv.getContext('2d'), SC = 4;
   ctx.setTransform(SC, 0, 0, SC, 0, 0); ctx.textBaseline = 'alphabetic'; ctx.imageSmoothingEnabled = false;
@@ -1045,9 +1088,9 @@ SET_ROWS = [0, 1, 2, 3, 7];   // Handy: neues Spiel, Zeitraffer, Ton, Sensoren, 
   let S = newEgg((Math.random() * 4294967296) >>> 0), hadSave = false;
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) { const o = JSON.parse(raw); if (o && typeof o.hunger === 'number') { S = Object.assign(S, o, { msgIcon: -1, msgUntil: 0, anim: 0, snd: 0, coolUntil: 0, ui: 0, req: 0, first: 0, trawl: 0 }); hadSave = true; } }
+    if (raw) { const o = JSON.parse(raw); if (o && typeof o.hunger === 'number') { S = Object.assign(S, o, { msgIcon: -1, msgUntil: 0, anim: 0, snd: 0, coolUntil: 0, ui: 0, req: 0, first: 0, man: 0, trawl: 0 }); hadSave = true; } }
   } catch (e) {}
-  if (!hadSave) { S.ui = 2; S.first = 1; }   // erster Start: erst ein Tier waehlen
+  if (!hadSave) { S.ui = 2; S.first = 1; S.man = 1; }   // erster Start: erst ein Tier waehlen
   // Zeit, in der die Seite zu war, nachholen (das Tier hat geschlafen, 10x langsamer)
   const resume = () => {
     if (!S.now) S.now = clockNow();
