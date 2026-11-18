@@ -102,6 +102,7 @@ button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
 <p class="hint" id="hint">Tipp: In Safari über Teilen → „Zum Home-Bildschirm“ wird Delfino zur App.</p>
 <script>
 const FW_VERSION = 0;
+const FW_NAME = '3.1.2';
 // ===== TAMA CORE (Logik + Zeichnen, 135x240 hochkant) – identisch mit dem Sketch =====
 const rgb = (r, g, b) => ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 const C = {
@@ -916,9 +917,9 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
     R(0, 0, W, H, C.BGS);
     const ids = [I.NEWG, I.FAST, I.SPK, I.WAVE, I.BATT, I.WIFI, I.DL, I.HELP, I.BACK];
     for (let row = 0; row < SET_ROWS.length; row++) {
-      const r = SET_ROWS[row], y = 4 + row * 25, sel = S.uiSel === row, fg = sel ? C.BG : C.TXT;
-      if (r === 8) { backRow(y, sel, 23); continue; }
-      R(3, y, 129, 23, sel ? C.SEL : C.PANEL);
+      const r = SET_ROWS[row], y = 4 + row * 24, sel = S.uiSel === row, fg = sel ? C.BG : C.TXT;
+      if (r === 8) { backRow(y, sel, 22); continue; }
+      R(3, y, 129, 22, sel ? C.SEL : C.PANEL);
       if (r === 0) T('Neu', 8, y + 5, 2, fg);
       else iconK(ids[r], 8 + dv(20 - kW(ids[r], 3, 2), 2), y + dv(24 - kH(ids[r], 3, 2), 2), 3, 2, fg);
       if (r === 0) { if (S.species === 3) { gkn = 1; gkd = 6; drawPet(S, 3, 104, y + 17, M.HAPPY, false, false, t, A.NONE, 0, false); } else { gkn = 1; gkd = 4; drawPet(S, S.species, 104, y + 14, M.HAPPY, false, false, t, A.NONE, 0, false); } }
@@ -929,10 +930,11 @@ function makeDraw(g) {   // Zeichenfunktionen fuer eine Zeichenflaeche g (rect/t
         if (S.chg) iconK(I.BOLT, x - 13, y + 6, 3, 2, sel ? C.BG : C.SEL);
       }
       else if (r === 5) iconK(S.wifiOk ? I.CHECK : I.CROSSX, 112, y + 7, 3, 2, sel ? C.BG : (S.wifiOk ? C.OK : C.LOW));
-      else if (r === 6) { const b = 'v' + FW_VERSION; T(b, 128 - tw(b, 2), y + 4, 2, fg); }
+      else if (r === 6) { const b = 'v' + FW_NAME; T(b, 128 - tw(b, 2), y + 4, 2, fg); }
     }
     const cr = '(c) 2026 Daniel Lassak';
-    T(cr, dv(W - tw(cr, 1), 2) + 1, 230, 1, S.uiSel === SET_ROWS.length ? C.SEL : C.DIM);
+    T(cr, dv(W - tw(cr, 1), 2) + 1, 220, 1, S.uiSel === SET_ROWS.length ? C.SEL : C.DIM);
+    const vb = 'Version ' + FW_NAME; T(vb, dv(W - tw(vb, 1), 2) + 1, 230, 1, C.DIM);
   }
   function drawAkku(S, t) {
     R(0, 0, W, H, C.BGS);
@@ -1118,7 +1120,10 @@ SET_ROWS = [0, 1, 2, 3, 7, 8]; MANUAL_PHONE = true;   // Handy: neues Spiel, Zei
   // Offline: ein Service Worker legt die App im iPhone ab und schaut im Hintergrund nach neuen Versionen
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
-    navigator.serviceWorker.onmessage = (e) => { if (e.data === 'update') $('update').hidden = false; };
+    navigator.serviceWorker.onmessage = (e) => {   // neue Version gefunden: mit Nummer anzeigen
+      const d = e.data, v = d && d.version;
+      if (d === 'update' || (d && d.type === 'update')) { $('update').textContent = v ? 'Version ' + v + ' ist da – antippen zum Laden' : 'Neue Version da – antippen zum Laden'; $('update').hidden = false; }
+    };
     const check = () => navigator.serviceWorker.ready.then((reg) => { const w = navigator.serviceWorker.controller || reg.active; if (w) w.postMessage('check'); }).catch(() => {});
     setTimeout(check, 1500);   // kurz nach dem Start bei GitHub nachsehen
     document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });   // und beim Zurueckkehren in die App

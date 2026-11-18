@@ -49,7 +49,10 @@ jobs:
 
       - name: Kompilieren
         run: |
-          echo "#define FW_VERSION ${{ github.run_number }}" > delfino/version.h
+          V=$(tr -d ' \r\n' < delfino/VERSION)
+          echo "FWNAME=$V" >> "$GITHUB_ENV"
+          printf '#define FW_VERSION %s\n#define FW_NAME "%s"\n' "${{ github.run_number }}" "$V" > delfino/version.h
+          cat delfino/version.h
           arduino-cli compile --fqbn "$FQBN" --output-dir build delfino
           ls -la build
 
@@ -58,7 +61,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp build/delfino.ino.bin firmware.bin
-          echo "${{ github.run_number }}" > version.txt
-          gh release create "v${{ github.run_number }}" firmware.bin version.txt \
-            --title "Delfino v${{ github.run_number }}" \
-            --notes "Automatisch gebaut aus ${{ github.sha }}" --latest
+          # Zeile 1: Build-Nummer (vergleicht der Stick), Zeile 2: sichtbare Version
+          printf '%s\n%s\n' "${{ github.run_number }}" "$FWNAME" > version.txt
+          # gleiche Version nochmal gebaut: altes Release ersetzen
+          if gh release view "v$FWNAME" >/dev/null 2>&1; then gh release delete "v$FWNAME" --cleanup-tag -y; fi
+          gh release create "v$FWNAME" firmware.bin version.txt \
+            --title "Delfino $FWNAME" \
+            --notes "Build ${{ github.run_number }} aus ${{ github.sha }}. Aenderungen: siehe CHANGELOG.md" --latest

@@ -10,7 +10,10 @@
 #include "version.h"            // legt GitHub beim Bauen an
 #endif
 #ifndef FW_VERSION
-#define FW_VERSION 0
+#define FW_VERSION 0              // fortlaufende Build-Nummer (nur fuer den Update-Vergleich)
+#endif
+#ifndef FW_NAME
+#define FW_NAME "dev"            // sichtbare Version, kommt aus delfino/VERSION
 #endif
 #define DREHUNG 0               // steht das Bild auf dem Kopf: 2 eintragen
 static const char* UPDATE_URL = "https://github.com/Elitepole92/delfino/releases/latest/download/";
@@ -920,10 +923,10 @@ static void drawSettings(int32_t t) {
   R(0, 0, W, H, C_BGS);
   const int ids[9] = { I_NEWG, I_FAST, I_SPK, I_WAVE, I_BATT, I_WIFI, I_DL, I_HELP, I_BACK };
   for (int r = 0; r < SET_N; r++) {
-    int y = 4 + r * 25; bool sel = S.uiSel == r;
+    int y = 4 + r * 24; bool sel = S.uiSel == r;
     uint16_t fg = sel ? C_BG : C_TXT;
-    if (r == 8) { backRow(y, sel, 23); continue; }
-    R(3, y, 129, 23, sel ? C_SEL : C_PANEL);
+    if (r == 8) { backRow(y, sel, 22); continue; }
+    R(3, y, 129, 22, sel ? C_SEL : C_PANEL);
     if (r == 0) T("Neu", 8, y + 5, 2, fg);   // neues Spiel
     else iconK(ids[r], 8 + (20 - kW(ids[r], 3, 2)) / 2, y + (24 - kH(ids[r], 3, 2)) / 2, 3, 2, fg);
     if (r == 0) { if (S.species == 3) { gkn = 1; gkd = 6; drawPet(3, 104, y + 17, M_HAPPY, false, false, t, A_NONE, 0, false); } else { gkn = 1; gkd = 4; drawPet(S.species, 104, y + 14, M_HAPPY, false, false, t, A_NONE, 0, false); } }
@@ -935,10 +938,11 @@ static void drawSettings(int32_t t) {
       if (S.chg) iconK(I_BOLT, x - 13, y + 6, 3, 2, sel ? C_BG : C_SEL);
     }
     else if (r == 5) iconK(S.wifiOk ? I_CHECK : I_CROSSX, 112, y + 7, 3, 2, sel ? C_BG : (S.wifiOk ? C_OK : C_LOW));
-    else if (r == 6) { char b[12]; snprintf(b, sizeof(b), "v%d", FW_VERSION); T(b, 128 - tw(b, 2), y + 4, 2, fg); }
+    else if (r == 6) { char b[12]; snprintf(b, sizeof(b), "v%s", FW_NAME); T(b, 128 - tw(b, 2), y + 4, 2, fg); }
   }
   const char* cr = "(c) 2026 Daniel Lassak";
-  T(cr, (W - tw(cr, 1)) / 2 + 1, 230, 1, S.uiSel == SET_N ? C_SEL : C_DIM);   // leuchtet, wenn der versteckte Platz gewaehlt ist
+  T(cr, (W - tw(cr, 1)) / 2 + 1, 220, 1, S.uiSel == SET_N ? C_SEL : C_DIM);
+  char vb[24]; snprintf(vb, sizeof(vb), "Version %s", FW_NAME); T(vb, (W - tw(vb, 1)) / 2 + 1, 230, 1, C_DIM);   // leuchtet, wenn der versteckte Platz gewaehlt ist
 }
 static void drawAkku(int32_t t) {   // Akku-Seite: Prozent, Verlauf der letzten 24 Stunden, Schlaf-Zaehler, Aus
   (void)t;
@@ -1273,7 +1277,7 @@ void setup() {
   S.wifiOk = wifiSaved();
   idleA = digitalRead(BTN_A_PIN); idleB = digitalRead(BTN_B_PIN);   // Ruhepegel der Tasten merken
   setCpuFrequencyMhz(80);                                            // reicht fuers Spiel und spart Strom
-  Serial.printf("Delfino v%d: eingebaute Uhr %s, Spielzeit %02d:%02d, Startgrund %d\n", FW_VERSION, hasRtc ? "gefunden" : "nicht gefunden", hourOf(S.now), (int)((S.now / 60) % 60), (int)esp_reset_reason());
+  Serial.printf("Delfino %s (Build %d): eingebaute Uhr %s, Spielzeit %02d:%02d, Startgrund %d\n", FW_NAME, FW_VERSION, hasRtc ? "gefunden" : "nicht gefunden", hourOf(S.now), (int)((S.now / 60) % 60), (int)esp_reset_reason());
   saveState();
   M5.Mic.end(); M5.Speaker.end();                 // Mikro wird nicht gebraucht, Lautsprecher nur fuer Melodien
   lastTick = lastDraw = lastSave = lastAct = lastImu = shWin = lastAlert = millis(); lastBatt = 0; bootMs = lastAct;

@@ -47,7 +47,8 @@ self.addEventListener('message', (e) => {
       const [newText, oldText] = await Promise.all([res.clone().text(), old ? old.text() : Promise.resolve(null)]);
       if (newText !== oldText) {
         await cache.put('./index.html', res);
-        if (e.source) e.source.postMessage('update');
+        const m = newText.match(/const FW_NAME = '([^']+)'/);
+        if (e.source) e.source.postMessage({ type: 'update', version: m ? m[1] : '' });
       }
     } catch (err) { /* offline: einfach weiterspielen */ }
   })());

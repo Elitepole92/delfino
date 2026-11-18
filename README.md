@@ -20,6 +20,9 @@ Medizin geben. Schuetteln macht Wellen.
    (siehe *Actions*) und legt ein Release an.
 4. Am Stick: **B lang -> Update**. Er laedt die neueste Version und startet neu.
 
+Versionen: Die sichtbare Nummer steht in `delfino/VERSION` (Schema Haupt.Neben.Fix, siehe `CHANGELOG.md`).
+Fuer ein neues Release dort die Nummer erhoehen.
+
 Das Repo muss **oeffentlich** sein, damit der Stick die Releases ohne Passwort laden kann.
 Im Code stehen keine Zugangsdaten; das WLAN-Passwort liegt nur auf dem Stick.
 
